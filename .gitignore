@@ -1,0 +1,386 @@
+# ============================================================
+# AI-CareerOS — Comprehensive .gitignore
+# Covers: React+TS+Vite | Spring Boot | Python/FastAPI
+#          Node.js (Express/MongoDB) | Streamlit | Expo
+#          ChromaDB / SQLite / MySQL | Docker / K8s
+# Last updated: 2026-05-18
+# ============================================================
+
+# ── Project meta ────────────────────────────────────────────
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.staging
+.env.production
+.env.*.local
+*.local
+secrets.toml
+st.secrets.toml
+secrets.yaml
+kubernetes-secrets.yaml
+
+# OS & system files
+.DS_Store
+Thumbs.db
+desktop.ini
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+*.lnk
+
+# ── IDE & editor configs ────────────────────────────────────
+.vscode/
+.vscode*/
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*.swn
+.agent/
+.kilo/
+
+# ── Node.js / npm / yarn / pnpm ────────────────────────────
+node_modules/
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lockb
+
+# ── React / Vite ────────────────────────────────────────────
+dist/
+build/
+vite-env.d.ts
+.vite/
+*.tsbuildinfo
+.eslintcache
+.cache/
+
+# ── Next.js ─────────────────────────────────────────────────
+.next/
+out/
+.next-env.d.ts
+vercel.json
+.vercel/
+
+# ── Expo / React Native ─────────────────────────────────────
+.expo/
+.expo-shared/
+.expo-env.d.ts
+web-build/
+*.jks
+*.p8
+*.p12
+*.pem
+*.mobileprovision
+.metro-health-check*
+android/.gradle/
+android/app/build/
+android/build/
+ios/.xcode.env.local
+ios/Pods/
+*.orig.*
+*.keystore
+*.apk
+*.aab
+*.ipa
+
+# ── Python ──────────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+venv.bak/
+env.bak/
+.venvbin/
+.python-version
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+*.manifest
+*.spec
+pip-wheel-metadata/
+share/python-wheels/
+pip-log.txt
+.eggs/
+MANIFEST
+*.egg-info/
+dist/
+build/
+.tox/
+.nox/
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+*.DCU
+*.dcu
+
+# ── PyInstaller ─────────────────────────────────────────────
+*.manifest
+*.spec
+
+# ── Streamlit ───────────────────────────────────────────────
+.streamlit/
+.streamlit/secrets.toml
+*.streamlit/
+config.toml
+global_config.json
+default_config.json
+
+# ── ChromaDB (vector store) ─────────────────────────────────
+chroma_db/
+chroma_storage/
+Chroma/
+*.chroma
+
+# ── SQLite ──────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# ── S3 ──────────────────────────────────────────────────────
+.s3/
+aws-credentials*
+
+# ── Pinecone ────────────────────────────────────────────────
+pinecone_env
+
+# ── MongoDB ─────────────────────────────────────────────────
+*.mongodb
+.mongorc.js
+
+# ── Java / Maven ────────────────────────────────────────────
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+.mvn/
+mvnw*
+.mvnw*
+.settings/
+*.log
+.factorypath
+.spring*
+.apt_generated
+.sts4-cache
+
+# Spring Boot
+application*.properties
+application*.yml
+application*.yaml
+data.sql
+banner.txt
+
+# ── Tomcat / Jetty ──────────────────────────────────────────
+Tomcat/
+jetty/
+
+# ── Docker ──────────────────────────────────────────────────
+docker-compose.override.yml
+.docker/
+docker-compose*.local.yml
+.env.docker
+.env.prod
+
+# ── Kubernetes ──────────────────────────────────────────────
+.kube/
+*.secret.yaml
+*.values.local.yaml
+helm/secrets.values.yaml
+
+# ── Render / Railway ────────────────────────────────────────
+.render/
+.railway/
+.env.railway
+.env.render
+
+# ── Vercel ─────────────────────────────────────────────────
+.vercelignore
+.vercel/
+
+# ── Netlify ─────────────────────────────────────────────────
+.netlify/
+
+# ── AWS ─────────────────────────────────────────────────────
+.aws/
+aws-exports.js
+amplify_outputs.json
+amplify-config.json
+*.pem
+*.key
+
+# ── Google Cloud / Firebase ─────────────────────────────────
+*.firebase
+.firebaserc
+firebase.json
+firestore.rules
+firestore.indexes.json
+.env.firebase
+*.service_account.json
+google-services.json
+service-account*.json
+firebase-adminsdk*.json
+
+# ── API Keys & tokens ───────────────────────────────────────
+*_API_KEY*
+*_SECRET*
+*_TOKEN*
+*.pem
+*.key
+token.json
+credentials.json
+serviceAccountKey.json
+*gcp*.json
+*aws*.json
+OPENROUTER_API_KEY*
+JWT_SECRET*
+MONGO_URI*
+DATABASE_URL*
+
+# ── Logs ────────────────────────────────────────────────────
+logs/
+*.log
+log/
+_logs/
+.scannerwork/
+
+# ── Build & dist folders ────────────────────────────────────
+dist/
+build/
+bin/
+lib/__pycache__/
+tmp/
+.cache/
+site/
+_drafts/
+publish/
+output/
+out/
+
+# ── OS / Temp ───────────────────────────────────────────────═
+# Renv temp mount symlink used by VS Code (safe to ignore)
+.antigravity/
+.cache/
+.local/
+# ── Misc: virtual/generic虚拟机 & snapshot files
+*.iso
+*.vmdk
+*.vdi
+*.vhd
+*.vhdx
+*.ova
+*.ovf
+*.qcow2
+*.snap
+*.dmp
+*.hprof
+*.stackdump
+
+# ── Power BI exported data ──────────────────────────────────
+*.pbix
+*pbi*
+powerbi_*.json
+.pbit
+
+# ── Power BI Dashboard URL (internal) ───────────────────────
+assets/powerbi_dashboard_url.txt
+**/assets/powerbi_dashboard_url.txt
+
+# ── CSV analysis output ─────────────────────────────────────
+resume_predictions.csv
+*.predictions.csv
+*_analysis_output.csv
+
+# ── Trained model files ─────────────────────────────────────
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.onnx
+*.pb
+*.tflite
+*.mlmodel
+/model/
+/models/
+trained_models/
+saved_models/
+
+# ── Runtime configs ─────────────────────────────────────────
+runtime.json
+config.local.json
+config.development.yaml
+docker.env
+.envrc
+
+# ── Dependency export caches ────────────────────────────────
+.nx/
+.parcel-cache/
+.parcel/
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_esm/
+storybook-static/
+cypress/videos/
+cypress/screenshots/
+playwright-report/
+test-results/
+
+# ── Misc tooling ────────────────────────────────────────────
+.vscode-test/
+*.code-workspace
+!.vscode/extensions.json
+!.vscode/settings.json
+.stylelintcache
+prettier.config.cjs
+*.code-snippets
+
+# ── Result files ────────────────────────────────────────────
+results/
+output*.json
+output*.txt
+test-data/
+fixtures/
+*.csv~
+*.bak
+*.old
+*.orig
+
+# ── Jupyter / notebooks ─────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Lighthouse / CI reports ─────────────────────────────────
+.lighthouseci/
+.husky/
