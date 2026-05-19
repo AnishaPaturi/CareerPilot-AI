@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = "http://localhost:9999";
 
 export const authAPI = {
   login: async (email, password) => {
@@ -100,7 +100,7 @@ export const knowledgeAPI = {
   upload: async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch(`${BASE_URL}/api/knowledge/upload`, {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/upload`, {
       method: "POST",
       body: formData
     });
@@ -108,7 +108,7 @@ export const knowledgeAPI = {
     return res.json();
   },
   chat: async (query) => {
-    const res = await fetch(`${BASE_URL}/api/knowledge/chat`, {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query })
@@ -117,14 +117,14 @@ export const knowledgeAPI = {
     return res.json();
   },
   summarize: async () => {
-    const res = await fetch(`${BASE_URL}/api/knowledge/summarize`, {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/summarize`, {
       method: "POST"
     });
     if (!res.ok) throw new Error('Failed to summarize document');
     return res.json();
   },
   quiz: async (topic, numQuestions = 5) => {
-    const res = await fetch(`${BASE_URL}/api/knowledge/quiz?topic=${encodeURIComponent(topic)}&numQuestions=${numQuestions}`, {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/quiz?topic=${encodeURIComponent(topic)}&num_questions=${numQuestions}`, {
       method: "POST"
     });
     if (!res.ok) throw new Error('Failed to generate quiz');
@@ -132,21 +132,40 @@ export const knowledgeAPI = {
   }
 };
 
-export const resumeBuilderAPI = {
-  rewrite: async (resumeText) => {
-    const res = await fetch(`${BASE_URL}/api/rewrite-resume`, {
+export const atsAPI = {
+  analyze: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${BASE_URL}/api/ai/ats/analyze`, {
+      method: "POST",
+      body: formData
+    });
+    if (!res.ok) throw new Error('Failed to analyze resume');
+    return res.json();
+  },
+  matchJob: async (resumeText, jobDescription) => {
+    const res = await fetch(`${BASE_URL}/api/ai/ats/match-job`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resumeText })
+      body: JSON.stringify({ resume_text: resumeText, job_description: jobDescription })
+    });
+    if (!res.ok) throw new Error('Failed to match resume');
+    return res.json();
+  },
+  rewrite: async (section) => {
+    const res = await fetch(`${BASE_URL}/api/ai/ats/rewrite`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ section })
     });
     if (!res.ok) throw new Error('Failed to rewrite resume');
     return res.json();
   },
   chat: async (resumeText, question) => {
-    const res = await fetch(`${BASE_URL}/api/chat-resume`, {
+    const res = await fetch(`${BASE_URL}/api/ai/ats/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resumeText, question })
+      body: JSON.stringify({ resume_text: resumeText, question })
     });
     if (!res.ok) throw new Error('Failed to chat with resume');
     return res.json();

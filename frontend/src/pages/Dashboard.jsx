@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect, useLocation } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Search, CheckCircle, Video, Map as MapIcon, BookOpen } from 'lucide-react';
-import { drivesAPI, applicationsAPI } from '../services/api';
+import { drivesAPI, applicationsAPI, atsAPI } from '../services/api';
 import AIInterviewSimulator from '../components/AIInterviewSimulator';
 import DSAPlanner from '../components/DSAPlanner';
 import KnowledgeBase from '../components/KnowledgeBase';
+import NotesView from '../pages/Notes';
 
 export default function Dashboard() {
   const { user, role, logout } = useAuth();
@@ -20,6 +21,7 @@ export default function Dashboard() {
     { id: 'interview', label: 'AI Interview', icon: <Video size={18} /> },
     { id: 'dsa',      label: 'DSA Planner', icon: <MapIcon size={18} /> },
     { id: 'knowledge', label: 'Study Materials', icon: <BookOpen size={18} /> },
+    { id: 'notes', label: 'My Notes', icon: <BookOpen size={18} /> },
   ];
 
   const adminNavItems = [
@@ -68,10 +70,7 @@ export default function Dashboard() {
     if (!selectedFile) { alert("Please select a file first"); return; }
     try {
       setAnalyzing(true);
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      const res = await fetch("http://localhost:8080/api/ai/analyze-ats?jobDescription=software+engineer", { method: "POST", body: formData });
-      const data = await res.json();
+      const data = await atsAPI.analyze(selectedFile);
       console.log("Analysis:", data);
       navigate("/report", { state: { analysis: data } });
     } catch (err) {
@@ -365,6 +364,10 @@ export default function Dashboard() {
 
           {active === 'knowledge' && role === 'STUDENT' && (
             <KnowledgeBase />
+          )}
+
+          {active === 'notes' && role === 'STUDENT' && (
+            <NotesView />
           )}
         </main>
       </div>

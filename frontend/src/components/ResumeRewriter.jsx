@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { atsAPI } from "../services/api";
 
 export default function ResumeRewriter({ resumeText }) {
 
@@ -11,16 +12,7 @@ const rewriteResume = async () => {
 setLoading(true);
 
 try {
-
-  const res = await fetch("http://localhost:8080/api/ai/rewrite-resume", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ resumeText })
-  });
-
-  const data = await res.json();
+  const data = await atsAPI.rewrite(resumeText);
 
   setImproved(data.rewritten);
 

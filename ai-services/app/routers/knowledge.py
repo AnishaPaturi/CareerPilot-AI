@@ -161,6 +161,49 @@ async def generate_quiz(topic: str, user_id: int = 1, num_questions: int = 10):
     
     import json
     try:
-        return json.loads(result)
+        parsed = json.loads(result)
+        return [{"question": q.get("question", ""), "options": q.get("options", ["A", "B", "C", "D"]), "correct": q.get("correct", "A"), "explanation": q.get("explanation", "")} for q in parsed]
     except:
         return []
+
+# Notes storage (in-memory for demo)
+NOTES_STORE = {}
+
+class NoteCreate(BaseModel):
+    document_id: int = 1
+    content: str
+    page_number: int = 1
+
+class NoteResponse(BaseModel):
+    id: int
+    document_id: int
+    content: str
+    page_number: int
+    created_at: str
+
+@router.post("/notes", response_model=NoteResponse)
+async def create_note(note: NoteCreate, user_id: int = 1):
+    import time
+    new_note = {
+        "id": int(time.time() * 1000),
+        "user_id": user_id,
+        "document_id": note.document_id,
+        "content": note.content,
+        "page_number": note.page_number,
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    }
+    if user_id not in NOTES_STORE:
+        NOTES_STORE[user_id] = []
+    NOTES_STORE[user_id].append(new_note)
+    return new_note
+
+@router.get("/notes")
+async def get_notes(user_id: int = 1):
+    notes = NOTES_STORE.get(user_id, [])
+    return {"notes": notes}
+
+@router.delete("/notes/{note_id}")
+async def delete_note(note_id: int, user_id: int = 1):
+    if user_id in NOTES_STORE:
+        NOTES_STORE[user_id] = [n for n in NOTES_STORE[user_id] if n["id"] != note_id]
+    return {"message": "Note deleted"}

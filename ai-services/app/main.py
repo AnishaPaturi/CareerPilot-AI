@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import interview, ats, dsa_planner, knowledge
@@ -17,10 +20,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(interview.router, prefix="/api/interview", tags=["interview"])
-app.include_router(ats.router, prefix="/api/ats", tags=["ats"])
-app.include_router(dsa_planner.router, prefix="/api/dsa", tags=["dsa"])
-app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"])
+app.include_router(interview.router, prefix="/api/ai/interview", tags=["interview"])
+app.include_router(ats.router, prefix="/api/ai/ats", tags=["ats"])
+app.include_router(dsa_planner.router, prefix="/api/ai/dsa", tags=["dsa"])
+app.include_router(knowledge.router, prefix="/api/ai/knowledge", tags=["knowledge"])
 
 @app.get("/health")
 async def health_check():

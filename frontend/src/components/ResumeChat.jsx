@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { atsAPI } from "../services/api";
 
 export default function ResumeChat({ resumeText }) {
 
@@ -24,17 +25,7 @@ setInput("");
 setLoading(true);
 
 try {
-
-  const res = await fetch("http://localhost:8080/api/ai/chat-resume", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      question: input,
-      resumeText
-    })
-  });
-
-  const data = await res.json();
+  const data = await atsAPI.chat(resumeText, input);
 
   setMessages([
     ...newMessages,
