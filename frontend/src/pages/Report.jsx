@@ -3,6 +3,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer
 } from "recharts";
 import ResumeRewriter from "../components/ResumeRewriter";
+import ResumeChat from "../components/ResumeChat";
 
 export default function Report() {
 
@@ -30,13 +31,12 @@ export default function Report() {
   const heatmapSkills = [...skills, ...missing];
   const suggestions = data.suggestions || [];
   const summary = data.summary || "";
+  const resumeText = data.extracted_text || "Resume text not available.";
 
   const radarData = skills.slice(0,6).map(s => ({
     skill: s,
     value: 80
   }));
-
-  const heatmapSkills = [...skills, ...missing];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black text-white p-8">
@@ -147,6 +147,12 @@ export default function Report() {
           Back
         </button>
 
+      </div>
+
+      {/* RESUME BUILDER & CHAT SECTION */}
+      <div className="grid md:grid-cols-2 gap-8 mt-8">
+        <ResumeChat resumeText={resumeText} />
+        <ResumeRewriter resumeText={resumeText} />
       </div>
 
     </div>

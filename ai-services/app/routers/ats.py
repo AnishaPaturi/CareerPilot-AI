@@ -5,7 +5,7 @@ import os
 import json
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 import pdfplumber
 
 router = APIRouter()
@@ -22,6 +22,7 @@ class ResumeAnalysis(BaseModel):
     missing_skills: List[str]
     suggestions: List[str]
     summary: str
+    extracted_text: Optional[str] = None
 
 class JobMatchRequest(BaseModel):
     resume_text: str
@@ -78,6 +79,7 @@ async def analyze_resume(file: UploadFile = File(...)):
     chain = prompt | llm | parser
     result = chain.invoke({"resume_text": resume_text[:3000]})
     
+    result["extracted_text"] = resume_text
     return ResumeAnalysis(**result)
 
 @router.post("/match-job", response_model=JobMatchResponse)
@@ -103,8 +105,16 @@ async def match_resume_to_job(request: JobMatchRequest):
     
     return JobMatchResponse(**result)
 
+class RewriteRequest(BaseModel):
+    section: str
+    style: str = "professional"
+
+class ChatResumeRequest(BaseModel):
+    resume_text: str
+    question: str
+
 @router.post("/rewrite")
-async def rewrite_resume_section(section: str, style: str = "professional"):
+async def rewrite_resume_section(request: RewriteRequest):
     llm = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
@@ -121,6 +131,28 @@ async def rewrite_resume_section(section: str, style: str = "professional"):
     """)
     
     chain = prompt | llm | StrOutputParser()
-    result = chain.invoke({"section": section, "style": style})
+    result = chain.invoke({"section": request.section, "style": request.style})
     
     return {"rewritten": result}
+
+@router.post("/chat")
+async def chat_resume(request: ChatResumeRequest):
+    llm = ChatOpenAI(
+        api_key=os.getenv("OPENROUTER_API_KEY"),
+        base_url="https://openrouter.ai/api/v1",
+        model="google/gemini-2.0-flash-001",
+        temperature=0.3
+    )
+    
+    prompt = ChatPromptTemplate.from_template("""
+    You are an AI Resume Assistant. Help the user improve their resume.
+    
+    Resume Context: {resume_text}
+    
+    User Question: {question}
+    """)
+    
+    chain = prompt | llm | StrOutputParser()
+    result = chain.invoke({"resume_text": request.resume_text, "question": request.question})
+    
+    return {"answer": result}

@@ -95,3 +95,60 @@ export const dsaPlannerAPI = {
     return res.json();
   }
 };
+
+export const knowledgeAPI = {
+  upload: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${BASE_URL}/api/knowledge/upload`, {
+      method: "POST",
+      body: formData
+    });
+    if (!res.ok) throw new Error('Failed to upload document');
+    return res.json();
+  },
+  chat: async (query) => {
+    const res = await fetch(`${BASE_URL}/api/knowledge/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query })
+    });
+    if (!res.ok) throw new Error('Failed to chat with document');
+    return res.json();
+  },
+  summarize: async () => {
+    const res = await fetch(`${BASE_URL}/api/knowledge/summarize`, {
+      method: "POST"
+    });
+    if (!res.ok) throw new Error('Failed to summarize document');
+    return res.json();
+  },
+  quiz: async (topic, numQuestions = 5) => {
+    const res = await fetch(`${BASE_URL}/api/knowledge/quiz?topic=${encodeURIComponent(topic)}&numQuestions=${numQuestions}`, {
+      method: "POST"
+    });
+    if (!res.ok) throw new Error('Failed to generate quiz');
+    return res.json();
+  }
+};
+
+export const resumeBuilderAPI = {
+  rewrite: async (resumeText) => {
+    const res = await fetch(`${BASE_URL}/api/rewrite-resume`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resumeText })
+    });
+    if (!res.ok) throw new Error('Failed to rewrite resume');
+    return res.json();
+  },
+  chat: async (resumeText, question) => {
+    const res = await fetch(`${BASE_URL}/api/chat-resume`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resumeText, question })
+    });
+    if (!res.ok) throw new Error('Failed to chat with resume');
+    return res.json();
+  }
+};

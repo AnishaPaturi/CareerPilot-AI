@@ -80,17 +80,15 @@ public class AiService {
     }
 
     public Map<String, Object> rewriteResumeSection(String resumeText, String section, String suggestions) {
-        return Map.of(
-                "original", resumeText,
-                "rewritten", "Enhanced " + section + ": " + resumeText,
-                "suggestions", suggestions != null ? suggestions : ""
-        );
+        String url = FASTAPI_BASE_URL + "/ats/rewrite";
+        Map<String, String> request = Map.of("section", resumeText, "style", "professional");
+        return restTemplate.postForObject(url, request, Map.class);
     }
 
     public Map<String, Object> chatResume(String resumeText, String question) {
-        return Map.of(
-                "answer", "Based on your resume context, I can help analyze your qualifications."
-        );
+        String url = FASTAPI_BASE_URL + "/ats/chat";
+        Map<String, String> request = Map.of("resume_text", resumeText, "question", question);
+        return restTemplate.postForObject(url, request, Map.class);
     }
 
     public Object generateInterviewQuestions(Map<String, Object> request) {
@@ -115,6 +113,45 @@ public class AiService {
         }
         if (difficulty != null) {
             url.append("&difficulty=").append(difficulty);
+        }
+        return restTemplate.postForObject(url.toString(), null, Object.class);
+    }
+
+    public Object uploadKnowledgeDocument(MultipartFile file, Integer userId) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", new ByteArrayResource(file.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return file.getOriginalFilename() != null ? file.getOriginalFilename() : "document.pdf";
+                }
+            });
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+            String url = FASTAPI_BASE_URL + "/knowledge/upload?user_id=" + (userId != null ? userId : 1);
+            return restTemplate.postForObject(url, requestEntity, Object.class);
+        } catch (Exception e) {
+            return Map.of("error", e.getMessage());
+        }
+    }
+
+    public Object chatKnowledge(Map<String, Object> request, Integer userId) {
+        String url = FASTAPI_BASE_URL + "/knowledge/chat?user_id=" + (userId != null ? userId : 1);
+        return restTemplate.postForObject(url, request, Object.class);
+    }
+
+    public Object summarizeKnowledge(Integer userId) {
+        String url = FASTAPI_BASE_URL + "/knowledge/summarize?user_id=" + (userId != null ? userId : 1);
+        return restTemplate.postForObject(url, null, Object.class);
+    }
+
+    public Object generateKnowledgeQuiz(String topic, Integer userId, Integer numQuestions) {
+        StringBuilder url = new StringBuilder(FASTAPI_BASE_URL + "/knowledge/quiz?topic=" + topic + "&user_id=" + (userId != null ? userId : 1));
+        if (numQuestions != null) {
+            url.append("&num_questions=").append(numQuestions);
         }
         return restTemplate.postForObject(url.toString(), null, Object.class);
     }

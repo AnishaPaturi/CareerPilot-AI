@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useLocation } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Search, CheckCircle, Video, Map as MapIcon } from 'lucide-react';
+import { LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Search, CheckCircle, Video, Map as MapIcon, BookOpen } from 'lucide-react';
 import { drivesAPI, applicationsAPI } from '../services/api';
 import AIInterviewSimulator from '../components/AIInterviewSimulator';
 import DSAPlanner from '../components/DSAPlanner';
+import KnowledgeBase from '../components/KnowledgeBase';
 
 export default function Dashboard() {
   const { user, role, logout } = useAuth();
@@ -18,6 +19,7 @@ export default function Dashboard() {
     { id: 'upload',   label: 'Upload Resume', icon: <FileText size={18} /> },
     { id: 'interview', label: 'AI Interview', icon: <Video size={18} /> },
     { id: 'dsa',      label: 'DSA Planner', icon: <MapIcon size={18} /> },
+    { id: 'knowledge', label: 'Study Materials', icon: <BookOpen size={18} /> },
   ];
 
   const adminNavItems = [
@@ -359,6 +361,10 @@ export default function Dashboard() {
 
           {active === 'dsa' && role === 'STUDENT' && (
             <DSAPlanner />
+          )}
+
+          {active === 'knowledge' && role === 'STUDENT' && (
+            <KnowledgeBase />
           )}
         </main>
       </div>
