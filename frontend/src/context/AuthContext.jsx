@@ -33,6 +33,18 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const demoLogin = () => {
+    const demoUser = { id: 1, name: 'Demo User', email: 'demo@resumeai.com' };
+    const demoToken = 'demo-token-' + Date.now();
+    const demoRole = 'STUDENT';
+    localStorage.setItem('resumeai_token', demoToken);
+    localStorage.setItem('resumeai_user', JSON.stringify(demoUser));
+    localStorage.setItem('resumeai_role', demoRole);
+    setToken(demoToken);
+    setUser(demoUser);
+    setRole(demoRole);
+  };
+
   const register = async (name, email, password) => {
     const data = await authAPI.register(name, email, password);
     return data;
@@ -48,7 +60,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, token, loading, login, logout, register, isAuthenticated: !!user }}>
+      <AuthContext.Provider value={{ user, role, token, loading, login, logout, register, demoLogin, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

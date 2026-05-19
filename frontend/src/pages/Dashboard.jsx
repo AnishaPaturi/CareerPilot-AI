@@ -7,6 +7,7 @@ import AIInterviewSimulator from '../components/AIInterviewSimulator';
 import DSAPlanner from '../components/DSAPlanner';
 import KnowledgeBase from '../components/KnowledgeBase';
 import NotesView from '../pages/Notes';
+import CSNotes from '../components/CSNotes';
 
 export default function Dashboard() {
   const { user, role, logout } = useAuth();
@@ -367,7 +368,7 @@ export default function Dashboard() {
           )}
 
           {active === 'notes' && role === 'STUDENT' && (
-            <NotesView />
+            <CSNotes />
           )}
         </main>
       </div>
