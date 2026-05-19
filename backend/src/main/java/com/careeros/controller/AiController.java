@@ -1,6 +1,6 @@
-package com.placement.controller;
+package com.careeros.controller;
 
-import com.placement.service.AiService;
+import com.careeros.service.AiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -49,6 +49,19 @@ public class AiController {
 
         try {
             Map<String, Object> result = aiService.rewriteResumeSection(resumeText, section, suggestions);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/chat-resume")
+    public ResponseEntity<Map<String, Object>> chatResume(
+            @RequestParam("question") String question,
+            @RequestParam("resumeText") String resumeText) {
+
+        try {
+            Map<String, Object> result = aiService.chatResume(resumeText, question);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));

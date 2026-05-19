@@ -1,6 +1,6 @@
-package com.placement.controller;
+package com.careeros.controller;
 
-import com.placement.service.JobService;
+import com.careeros.service.JobService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

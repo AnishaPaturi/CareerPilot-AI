@@ -1,6 +1,12 @@
-package com.placement.model;
+package com.careeros.model;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "interviews")
 public class Interview {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private Integer driveId;
     private Integer studentId;

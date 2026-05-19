@@ -206,10 +206,10 @@ CREATE TABLE notifications (
     title VARCHAR(255),
     message TEXT,
     type VARCHAR(50),
-    read BOOLEAN DEFAULT FALSE,
+    is_read TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Insert default admin
-INSERT INTO users (email, password, name, role) VALUES ('admin@careeros.com', '$2a$10$placeholder', 'System Admin', 'ADMIN');
+-- Insert default admin (password: admin123, BCrypt hashed)
+INSERT INTO users (email, password, name, role) VALUES ('admin@careeros.com', '$2a$10$N9qo8gWGBm1z8vTj6p3XdeBxZZxjWpJbLcHyh0pLzzDjnGSZTHQke', 'System Admin', 'ADMIN');

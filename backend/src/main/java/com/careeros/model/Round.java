@@ -1,8 +1,14 @@
-package com.placement.model;
+package com.careeros.model;
 
 import java.sql.Date;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "rounds")
 public class Round {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private Integer driveId;
     private String roundName;

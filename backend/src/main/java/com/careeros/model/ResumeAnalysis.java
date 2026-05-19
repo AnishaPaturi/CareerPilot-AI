@@ -1,8 +1,14 @@
-package com.placement.model;
+package com.careeros.model;
 
 import java.sql.Timestamp;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "resume_analyses")
 public class ResumeAnalysis {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private Integer studentId;
     private String skills;

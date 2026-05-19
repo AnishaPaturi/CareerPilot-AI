@@ -1,6 +1,12 @@
-package com.placement.model;
+package com.careeros.model;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "admins")
 public class Admin {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String name;
     private String email;

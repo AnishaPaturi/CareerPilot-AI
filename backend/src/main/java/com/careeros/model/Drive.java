@@ -1,8 +1,14 @@
-package com.placement.model;
+package com.careeros.model;
 
 import java.sql.Date;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "drives")
 public class Drive {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private Integer companyId;
     private String role;

@@ -12,7 +12,7 @@ setLoading(true);
 
 try {
 
-  const res = await fetch("http://localhost:5000/api/ai/rewrite", {
+  const res = await fetch("http://localhost:8080/api/ai/rewrite-resume", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -22,7 +22,7 @@ try {
 
   const data = await res.json();
 
-  setImproved(data.improvedResume);
+  setImproved(data.rewritten);
 
 } catch (err) {
 

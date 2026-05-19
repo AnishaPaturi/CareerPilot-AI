@@ -1,4 +1,4 @@
-package com.placement.model;
+package com.careeros.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

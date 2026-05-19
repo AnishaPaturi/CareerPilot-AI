@@ -1,10 +1,10 @@
-package com.placement.controller;
+package com.careeros.controller;
 
-import com.placement.model.Application;
-import com.placement.model.Student;
-import com.placement.repository.ApplicationRepository;
-import com.placement.repository.StudentRepository;
-import com.placement.service.EmailService;
+import com.careeros.model.Application;
+import com.careeros.model.Student;
+import com.careeros.repository.ApplicationRepository;
+import com.careeros.repository.StudentRepository;
+import com.careeros.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -44,9 +44,9 @@ public class ApplicationController {
         int updated = applicationRepository.updateStatus(id, status);
         if (updated > 0) {
             // Fetch application details for email
-            Application app = applicationRepository.findById(id);
+            Application app = applicationRepository.getById(id);
             if (app != null) {
-                Student student = studentRepository.findById(app.getStudentId());
+                Student student = studentRepository.getById(app.getStudentId());
                 if (student != null && emailService != null) {
                     try {
                         emailService.sendApplicationStatusUpdate(student.getEmail(), student.getName(), "Company", status);

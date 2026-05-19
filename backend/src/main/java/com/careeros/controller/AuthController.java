@@ -1,12 +1,13 @@
-package com.placement.controller;
+package com.careeros.controller;
 
-import com.placement.model.Admin;
-import com.placement.model.Student;
-import com.placement.repository.AdminRepository;
-import com.placement.repository.StudentRepository;
+import com.careeros.model.Admin;
+import com.careeros.model.Student;
+import com.careeros.repository.AdminRepository;
+import com.careeros.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -28,10 +29,11 @@ public class AuthController {
         String password = credentials.get("password");
 
         Map<String, Object> response = new HashMap<>();
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
         // Check Admin First
         Admin admin = adminRepository.findByEmail(email);
-        if (admin != null && admin.getPassword().equals(password)) {
+        if (admin != null && matchesPassword(password, admin.getPassword())) {
             response.put("success", true);
             response.put("role", "ADMIN");
             response.put("user", admin);
@@ -40,7 +42,7 @@ public class AuthController {
 
         // Check Student Second
         Student student = studentRepository.findByEmail(email);
-        if (student != null && student.getPassword().equals(password)) {
+        if (student != null && matchesPassword(password, student.getPassword())) {
             response.put("success", true);
             response.put("role", "STUDENT");
             response.put("user", student);
@@ -50,6 +52,13 @@ public class AuthController {
         response.put("success", false);
         response.put("message", "Invalid credentials");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    private boolean matchesPassword(String raw, String stored) {
+        if (stored != null && stored.startsWith("$2a$10$")) {
+            return new BCryptPasswordEncoder().matches(raw, stored);
+        }
+        return raw.equals(stored);
     }
 }
 

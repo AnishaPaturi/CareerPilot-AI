@@ -1,7 +1,7 @@
-package com.placement.controller;
+package com.careeros.controller;
 
-import com.placement.model.Round;
-import com.placement.repository.RoundRepository;
+import com.careeros.model.Round;
+import com.careeros.repository.RoundRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +22,7 @@ public class RoundController {
 
     @PostMapping
     public ResponseEntity<String> createRound(@RequestBody Round round) {
-        int result = roundRepository.save(round);
+        int result = roundRepository.create(round);
         if (result > 0) {
             return ResponseEntity.ok("Round created successfully");
         }
@@ -32,7 +32,7 @@ public class RoundController {
     @PutMapping("/{id}")
     public ResponseEntity<String> updateRound(@PathVariable int id, @RequestBody Round round) {
         round.setId(id);
-        int result = roundRepository.update(round);
+        int result = roundRepository.modify(round);
         if (result > 0) {
             return ResponseEntity.ok("Round updated successfully");
         }
@@ -41,7 +41,7 @@ public class RoundController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteRound(@PathVariable int id) {
-        int result = roundRepository.delete(id);
+        int result = roundRepository.remove(id);
         if (result > 0) {
             return ResponseEntity.ok("Round deleted successfully");
         }

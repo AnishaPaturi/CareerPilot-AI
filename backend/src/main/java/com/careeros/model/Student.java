@@ -1,6 +1,13 @@
-package com.placement.model;
+package com.careeros.model;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "students")
 public class Student {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String name;
     private String email;
@@ -46,9 +53,9 @@ public class Student {
     public void setProjects(String projects) { this.projects = projects; }
     public String getSummary() { return summary; }
     public void setSummary(String summary) { this.summary = summary; }
-    public String getResetToken() { return resetToken; }
-    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
 
     private String resetToken;
+    public String getResetToken() { return resetToken; }
+    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
 }
 

@@ -1,8 +1,8 @@
-package com.placement.controller;
+package com.careeros.controller;
 
-import com.placement.model.Student;
-import com.placement.repository.StudentRepository;
-import com.placement.service.EmailService;
+import com.careeros.model.Student;
+import com.careeros.repository.StudentRepository;
+import com.careeros.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

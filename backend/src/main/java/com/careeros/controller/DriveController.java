@@ -1,13 +1,13 @@
-package com.placement.controller;
+package com.careeros.controller;
 
-import com.placement.model.Application;
-import com.placement.model.Drive;
-import com.placement.model.Student;
-import com.placement.repository.ApplicationRepository;
-import com.placement.repository.DriveRepository;
-import com.placement.repository.StudentRepository;
-import com.placement.service.EligibilityEngine;
-import com.placement.service.ShortlistingAlgorithm;
+import com.careeros.model.Application;
+import com.careeros.model.Drive;
+import com.careeros.model.Student;
+import com.careeros.repository.ApplicationRepository;
+import com.careeros.repository.DriveRepository;
+import com.careeros.repository.StudentRepository;
+import com.careeros.service.EligibilityEngine;
+import com.careeros.service.ShortlistingAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -50,7 +50,7 @@ public class DriveController {
         Application app = new Application();
         app.setDriveId(driveId);
         app.setStudentId(studentId);
-        app.setStatus(com.placement.model.ApplicationStatus.APPLIED);
+        app.setStatus(com.careeros.model.ApplicationStatus.APPLIED);
         applicationRepository.save(app);
         return ResponseEntity.ok("Applied successfully");
     }
@@ -58,16 +58,21 @@ public class DriveController {
     @PutMapping("/{id}")
     public ResponseEntity<String> updateDrive(@PathVariable int id, @RequestBody Drive drive) {
         drive.setId(id);
-        int result = driveRepository.update(drive);
-        if (result > 0) {
-            return ResponseEntity.ok("Drive updated successfully");
+        Drive existing = driveRepository.getById(id);
+        if (existing == null) {
+            return ResponseEntity.status(404).body("Drive not found");
         }
-        return ResponseEntity.status(404).body("Drive not found");
+        driveRepository.save(drive);
+        return ResponseEntity.ok("Drive updated successfully");
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteDrive(@PathVariable int id) {
-        int result = driveRepository.delete(id);
+        Drive existing = driveRepository.getById(id);
+        int result = existing != null ? 1 : 0;
+        if (existing != null) {
+            driveRepository.delete(existing);
+        }
         if (result > 0) {
             return ResponseEntity.ok("Drive deleted successfully");
         }
@@ -76,7 +81,7 @@ public class DriveController {
 
     @PostMapping("/{driveId}/shortlist")
     public List<Student> shortlistForDrive(@PathVariable int driveId) {
-        Drive drive = driveRepository.findById(driveId);
+        Drive drive = driveRepository.getById(driveId);
 
         List<Application> applications = applicationRepository.findByDriveId(driveId);
         List<Integer> applicantIds = applications.stream().map(Application::getStudentId).collect(Collectors.toList());

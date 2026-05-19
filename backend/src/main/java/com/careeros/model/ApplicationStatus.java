@@ -1,4 +1,4 @@
-package com.placement.model;
+package com.careeros.model;
 
 public enum ApplicationStatus {
     APPLIED,

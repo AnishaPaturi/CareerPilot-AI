@@ -1,10 +1,10 @@
-package com.placement.controller;
+package com.careeros.controller;
 
-import com.placement.model.ResumeAnalysis;
-import com.placement.model.Student;
-import com.placement.repository.ResumeAnalysisRepository;
-import com.placement.repository.StudentRepository;
-import com.placement.service.AiService;
+import com.careeros.model.ResumeAnalysis;
+import com.careeros.model.Student;
+import com.careeros.repository.ResumeAnalysisRepository;
+import com.careeros.repository.StudentRepository;
+import com.careeros.service.AiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -46,7 +46,7 @@ public class StudentController {
         try {
             Map<String, Object> aiResult = aiService.parseResumeForProfile(file);
 
-            Student student = studentRepository.findById(id);
+            Student student = studentRepository.getById(id);
             if (student == null) {
                 return ResponseEntity.status(404).body(Map.of("success", false, "message", "Student not found"));
             }
@@ -68,7 +68,7 @@ public class StudentController {
             student.setExperience(experience);
             student.setProjects(projects);
             student.setSummary(summary);
-            studentRepository.update(student);
+            studentRepository.save(student);
 
             ResumeAnalysis analysis = new ResumeAnalysis();
             analysis.setStudentId(id);
@@ -112,7 +112,7 @@ public class StudentController {
             return ResponseEntity.status(404).body("Student not found");
         }
         student.setId(id);
-        studentRepository.update(student);
+        studentRepository.save(student);
         return ResponseEntity.ok("Student updated successfully");
     }
 

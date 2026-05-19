@@ -1,7 +1,7 @@
-package com.placement.controller;
+package com.careeros.controller;
 
-import com.placement.model.Interview;
-import com.placement.repository.InterviewRepository;
+import com.careeros.model.Interview;
+import com.careeros.repository.InterviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +27,7 @@ public class InterviewController {
 
     @PostMapping
     public ResponseEntity<String> createInterview(@RequestBody Interview interview) {
-        int result = interviewRepository.save(interview);
+        int result = interviewRepository.create(interview);
         if (result > 0) {
             return ResponseEntity.ok("Interview scheduled successfully");
         }
@@ -37,7 +37,7 @@ public class InterviewController {
     @PutMapping("/{id}")
     public ResponseEntity<String> updateInterview(@PathVariable int id, @RequestBody Interview interview) {
         interview.setId(id);
-        int result = interviewRepository.update(interview);
+        int result = interviewRepository.modify(interview);
         if (result > 0) {
             return ResponseEntity.ok("Interview updated successfully");
         }
@@ -46,7 +46,7 @@ public class InterviewController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteInterview(@PathVariable int id) {
-        int result = interviewRepository.delete(id);
+        int result = interviewRepository.remove(id);
         if (result > 0) {
             return ResponseEntity.ok("Interview deleted successfully");
         }

@@ -1,7 +1,7 @@
-package com.placement.controller;
+package com.careeros.controller;
 
-import com.placement.model.Company;
-import com.placement.repository.CompanyRepository;
+import com.careeros.model.Company;
+import com.careeros.repository.CompanyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
