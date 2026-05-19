@@ -24,15 +24,12 @@ export default function Report() {
     );
   }
 
-  const { parsedData, skillMatch, score } = data;
-
-  const skills = parsedData?.skills || [];
-  const missing = skillMatch?.missingSkills || [];
-
-  const atsScore = Math.min(
-    100,
-    Math.round((skills.length / (skills.length + missing.length || 1)) * 100)
-  );
+  const atsScore = data.ats_score?.overall_score || 0;
+  const skills = data.skills_match ? Object.keys(data.skills_match) : [];
+  const missing = data.missing_skills || [];
+  const heatmapSkills = [...skills, ...missing];
+  const suggestions = data.suggestions || [];
+  const summary = data.summary || "";
 
   const radarData = skills.slice(0,6).map(s => ({
     skill: s,
@@ -113,29 +110,23 @@ export default function Report() {
 
       </div>
 
-      {/* STRENGTHS / WEAKNESSES */}
+      {/* STRENGTHS / WEAKNESSES / SUMMARY */}
       <div className="grid md:grid-cols-2 gap-8 mt-8">
 
         <div className="bg-white/5 border border-white/10 p-6 rounded-xl">
-          <h3 className="text-green-400 mb-4">Strengths</h3>
-
-          <ul className="space-y-2 text-slate-300">
-            {score?.strengths?.map((s,i)=>(
-              <li key={i}>• {s}</li>
-            ))}
-          </ul>
-
+          <h3 className="text-green-400 mb-4">Summary</h3>
+          <p className="text-slate-300 leading-relaxed text-sm">
+            {summary || "No summary provided."}
+          </p>
         </div>
 
         <div className="bg-white/5 border border-white/10 p-6 rounded-xl">
-          <h3 className="text-red-400 mb-4">Weaknesses</h3>
-
+          <h3 className="text-yellow-400 mb-4">Improvement Suggestions</h3>
           <ul className="space-y-2 text-slate-300">
-            {score?.weaknesses?.map((w,i)=>(
+            {suggestions.map((w,i)=>(
               <li key={i}>• {w}</li>
             ))}
           </ul>
-
         </div>
 
       </div>
