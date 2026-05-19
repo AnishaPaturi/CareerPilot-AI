@@ -22,3 +22,35 @@ export const authAPI = {
     return data;
   },
 };
+
+export const drivesAPI = {
+  getAll: async () => {
+    const res = await fetch(`${BASE_URL}/api/drives`);
+    if (!res.ok) throw new Error('Failed to fetch drives');
+    return res.json();
+  },
+  create: async (driveData) => {
+    const res = await fetch(`${BASE_URL}/api/drives`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(driveData),
+    });
+    if (!res.ok) throw new Error('Failed to create drive');
+    return res.text();
+  },
+  apply: async (driveId, studentId) => {
+    const res = await fetch(`${BASE_URL}/api/drives/${driveId}/apply/${studentId}`, {
+      method: "POST"
+    });
+    if (!res.ok) throw new Error('Failed to apply for drive');
+    return res.text();
+  }
+};
+
+export const applicationsAPI = {
+  getByStudent: async (studentId) => {
+    const res = await fetch(`${BASE_URL}/api/applications/student/${studentId}`);
+    if (!res.ok) throw new Error('Failed to fetch applications');
+    return res.json();
+  }
+};

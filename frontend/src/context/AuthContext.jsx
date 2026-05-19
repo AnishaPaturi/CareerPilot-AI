@@ -5,6 +5,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState(() => localStorage.getItem('resumeai_role'));
   const [token, setToken] = useState(() => localStorage.getItem('resumeai_token'));
   const [loading, setLoading] = useState(true);
 
@@ -22,11 +23,13 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const data = await authAPI.login(email, password);
-    const { token: jwt, user: userData } = data;
-    localStorage.setItem('resumeai_token', jwt);
+    const { token: jwt, user: userData, role: userRole } = data;
+    localStorage.setItem('resumeai_token', jwt || '');
     localStorage.setItem('resumeai_user', JSON.stringify(userData));
+    localStorage.setItem('resumeai_role', userRole || 'STUDENT');
     setToken(jwt);
     setUser(userData);
+    setRole(userRole || 'STUDENT');
     return data;
   };
 
@@ -38,12 +41,14 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('resumeai_token');
     localStorage.removeItem('resumeai_user');
+    localStorage.removeItem('resumeai_role');
     setToken(null);
     setUser(null);
+    setRole(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, register, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, role, token, loading, login, logout, register, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );
