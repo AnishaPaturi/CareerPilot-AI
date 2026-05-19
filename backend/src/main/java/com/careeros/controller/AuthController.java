@@ -54,6 +54,37 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
+    @PostMapping("/register")
+    public ResponseEntity<Map<String, Object>> register(@RequestBody Map<String, String> payload) {
+        String name = payload.get("name");
+        String email = payload.get("email");
+        String password = payload.get("password");
+
+        Map<String, Object> response = new HashMap<>();
+
+        if (studentRepository.findByEmail(email) != null || adminRepository.findByEmail(email) != null) {
+            response.put("success", false);
+            response.put("message", "Email already in use");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        Student student = new Student();
+        student.setName(name);
+        student.setEmail(email);
+        
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        student.setPassword(encoder.encode(password));
+        
+        studentRepository.save(student);
+
+        response.put("success", true);
+        response.put("message", "User registered successfully");
+        response.put("role", "STUDENT");
+        response.put("user", student);
+
+        return ResponseEntity.ok(response);
+    }
+
     private boolean matchesPassword(String raw, String stored) {
         if (stored != null && stored.startsWith("$2a$10$")) {
             return new BCryptPasswordEncoder().matches(raw, stored);

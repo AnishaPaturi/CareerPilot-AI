@@ -1,7 +1,7 @@
 -- Unified Database Schema for AI-CareerOS
 
 -- Users table (unified authentication)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -12,26 +12,26 @@ CREATE TABLE users (
 );
 
 -- Student profiles
-CREATE TABLE students (
+CREATE TABLE IF NOT EXISTS students (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    name VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    password VARCHAR(255),
     cgpa DECIMAL(3,2),
     branch VARCHAR(50),
     active_backlogs INT DEFAULT 0,
-    skills JSON,
-    certifications JSON,
-    education JSON,
-    experience JSON,
-    projects JSON,
-    summary TEXT,
+    skills TEXT,
+    certifications TEXT,
     resume_url VARCHAR(500),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    INDEX idx_branch (branch),
-    INDEX idx_cgpa (cgpa)
+    education TEXT,
+    experience TEXT,
+    projects TEXT,
+    summary TEXT,
+    reset_token VARCHAR(255)
 );
 
 -- Companies table
-CREATE TABLE companies (
+CREATE TABLE IF NOT EXISTS companies (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -40,7 +40,7 @@ CREATE TABLE companies (
 );
 
 -- Jobs table (merged from placement system and external job sources)
-CREATE TABLE jobs (
+CREATE TABLE IF NOT EXISTS jobs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     company_id INT,
     title VARCHAR(255) NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE jobs (
 );
 
 -- Placement drives
-CREATE TABLE drives (
+CREATE TABLE IF NOT EXISTS drives (
     id INT AUTO_INCREMENT PRIMARY KEY,
     company_id INT NOT NULL,
     role VARCHAR(100) NOT NULL,
@@ -72,7 +72,7 @@ CREATE TABLE drives (
 );
 
 -- Applications
-CREATE TABLE applications (
+CREATE TABLE IF NOT EXISTS applications (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     drive_id INT NOT NULL,
@@ -83,7 +83,7 @@ CREATE TABLE applications (
 );
 
 -- Interview schedules
-CREATE TABLE interviews (
+CREATE TABLE IF NOT EXISTS interviews (
     id INT AUTO_INCREMENT PRIMARY KEY,
     application_id INT,
     student_id INT NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE interviews (
 );
 
 -- Resume analyses (ATS scores)
-CREATE TABLE resume_analyses (
+CREATE TABLE IF NOT EXISTS resume_analyses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     ats_score INT,
@@ -114,7 +114,7 @@ CREATE TABLE resume_analyses (
 );
 
 -- Resume data
-CREATE TABLE resumes (
+CREATE TABLE IF NOT EXISTS resumes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     template_id VARCHAR(50),
@@ -126,7 +126,7 @@ CREATE TABLE resumes (
 );
 
 -- DSA Topics
-CREATE TABLE dsa_topics (
+CREATE TABLE IF NOT EXISTS dsa_topics (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     category VARCHAR(50),
@@ -137,7 +137,7 @@ CREATE TABLE dsa_topics (
 );
 
 -- DSA Roadmaps (personalized)
-CREATE TABLE dsa_roadmaps (
+CREATE TABLE IF NOT EXISTS dsa_roadmaps (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     title VARCHAR(100),
@@ -151,7 +151,7 @@ CREATE TABLE dsa_roadmaps (
 );
 
 -- DSA Progress tracking
-CREATE TABLE dsa_progress (
+CREATE TABLE IF NOT EXISTS dsa_progress (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     topic_id INT,
@@ -163,7 +163,7 @@ CREATE TABLE dsa_progress (
 );
 
 -- Mock interviews
-CREATE TABLE mock_interviews (
+CREATE TABLE IF NOT EXISTS mock_interviews (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
     interview_type ENUM('HR', 'TECHNICAL', 'SYSTEM_DESIGN', 'BEHAVIORAL') NOT NULL,
@@ -176,7 +176,7 @@ CREATE TABLE mock_interviews (
 );
 
 -- AI Knowledge Base (documents)
-CREATE TABLE documents (
+CREATE TABLE IF NOT EXISTS documents (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     filename VARCHAR(255) NOT NULL,
@@ -188,7 +188,7 @@ CREATE TABLE documents (
 );
 
 -- Query history for AI assistant
-CREATE TABLE query_logs (
+CREATE TABLE IF NOT EXISTS query_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     document_id INT,
@@ -200,7 +200,7 @@ CREATE TABLE query_logs (
 );
 
 -- Notifications
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     title VARCHAR(255),
@@ -212,4 +212,4 @@ CREATE TABLE notifications (
 );
 
 -- Insert default admin (password: admin123, BCrypt hashed)
-INSERT INTO users (email, password, name, role) VALUES ('admin@careeros.com', '$2a$10$N9qo8gWGBm1z8vTj6p3XdeBxZZxjWpJbLcHyh0pLzzDjnGSZTHQke', 'System Admin', 'ADMIN');
+INSERT IGNORE INTO users (email, password, name, role) VALUES ('admin@careeros.com', '$2a$10$N9qo8gWGBm1z8vTj6p3XdeBxZZxjWpJbLcHyh0pLzzDjnGSZTHQke', 'System Admin', 'ADMIN');
