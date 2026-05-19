@@ -92,4 +92,30 @@ public class AiService {
                 "answer", "Based on your resume context, I can help analyze your qualifications."
         );
     }
+
+    public Object generateInterviewQuestions(Map<String, Object> request) {
+        String url = FASTAPI_BASE_URL + "/interview/generate-questions";
+        return restTemplate.postForObject(url, request, Object.class);
+    }
+
+    public Object evaluateInterviewAnswer(Map<String, Object> submission) {
+        String url = FASTAPI_BASE_URL + "/interview/evaluate-answer";
+        return restTemplate.postForObject(url, submission, Object.class);
+    }
+
+    public Object generateDsaRoadmap(Map<String, Object> request) {
+        String url = FASTAPI_BASE_URL + "/dsa/generate-roadmap";
+        return restTemplate.postForObject(url, request, Object.class);
+    }
+
+    public Object recommendDsaProblems(String topic, Integer count, String difficulty) {
+        StringBuilder url = new StringBuilder(FASTAPI_BASE_URL + "/dsa/recommend-problems?topic=" + topic);
+        if (count != null) {
+            url.append("&count=").append(count);
+        }
+        if (difficulty != null) {
+            url.append("&difficulty=").append(difficulty);
+        }
+        return restTemplate.postForObject(url.toString(), null, Object.class);
+    }
 }

@@ -54,3 +54,44 @@ export const applicationsAPI = {
     return res.json();
   }
 };
+
+export const aiInterviewAPI = {
+  generateQuestions: async (role, interview_type, experience_level, tech_stack) => {
+    const res = await fetch(`${BASE_URL}/api/ai/interview/generate-questions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role, interview_type, experience_level, tech_stack })
+    });
+    if (!res.ok) throw new Error('Failed to generate questions');
+    return res.json();
+  },
+  evaluateAnswer: async (question, answer, role) => {
+    const res = await fetch(`${BASE_URL}/api/ai/interview/evaluate-answer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, answer, role })
+    });
+    if (!res.ok) throw new Error('Failed to evaluate answer');
+    return res.json();
+  }
+};
+
+export const dsaPlannerAPI = {
+  generateRoadmap: async (profile, days) => {
+    const res = await fetch(`${BASE_URL}/api/ai/dsa/generate-roadmap`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile, days })
+    });
+    if (!res.ok) throw new Error('Failed to generate roadmap');
+    return res.json();
+  },
+  recommendProblems: async (topic, count, difficulty) => {
+    let url = `${BASE_URL}/api/ai/dsa/recommend-problems?topic=${encodeURIComponent(topic)}`;
+    if (count) url += `&count=${count}`;
+    if (difficulty) url += `&difficulty=${encodeURIComponent(difficulty)}`;
+    const res = await fetch(url, { method: "POST" });
+    if (!res.ok) throw new Error('Failed to recommend problems');
+    return res.json();
+  }
+};

@@ -67,4 +67,43 @@ public class AiController {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PostMapping("/interview/generate-questions")
+    public ResponseEntity<Object> generateInterviewQuestions(@RequestBody Map<String, Object> request) {
+        try {
+            return ResponseEntity.ok(aiService.generateInterviewQuestions(request));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/interview/evaluate-answer")
+    public ResponseEntity<Object> evaluateInterviewAnswer(@RequestBody Map<String, Object> submission) {
+        try {
+            return ResponseEntity.ok(aiService.evaluateInterviewAnswer(submission));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/dsa/generate-roadmap")
+    public ResponseEntity<Object> generateDsaRoadmap(@RequestBody Map<String, Object> request) {
+        try {
+            return ResponseEntity.ok(aiService.generateDsaRoadmap(request));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/dsa/recommend-problems")
+    public ResponseEntity<Object> recommendDsaProblems(
+            @RequestParam("topic") String topic,
+            @RequestParam(value = "count", required = false) Integer count,
+            @RequestParam(value = "difficulty", required = false) String difficulty) {
+        try {
+            return ResponseEntity.ok(aiService.recommendDsaProblems(topic, count, difficulty));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

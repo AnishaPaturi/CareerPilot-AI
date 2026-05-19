@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useLocation } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Search, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Search, CheckCircle, Video, Map as MapIcon } from 'lucide-react';
 import { drivesAPI, applicationsAPI } from '../services/api';
+import AIInterviewSimulator from '../components/AIInterviewSimulator';
+import DSAPlanner from '../components/DSAPlanner';
 
 export default function Dashboard() {
   const { user, role, logout } = useAuth();
@@ -14,6 +16,8 @@ export default function Dashboard() {
     { id: 'find-jobs', label: 'Find Jobs', icon: <Search size={18} /> },
     { id: 'applications', label: 'My Applications', icon: <CheckCircle size={18} /> },
     { id: 'upload',   label: 'Upload Resume', icon: <FileText size={18} /> },
+    { id: 'interview', label: 'AI Interview', icon: <Video size={18} /> },
+    { id: 'dsa',      label: 'DSA Planner', icon: <MapIcon size={18} /> },
   ];
 
   const adminNavItems = [
@@ -347,6 +351,14 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
+          )}
+
+          {active === 'interview' && role === 'STUDENT' && (
+            <AIInterviewSimulator />
+          )}
+
+          {active === 'dsa' && role === 'STUDENT' && (
+            <DSAPlanner />
           )}
         </main>
       </div>
