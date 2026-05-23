@@ -76,6 +76,26 @@ export const aiInterviewAPI = {
   }
 };
 
+export const jobsAPI = {
+  /**
+   * Fetch live external job listings via the Career Nest open job board API.
+   * @param {string} keyword  title / skill keyword (e.g. "software engineer")
+   * @param {string} location country / city filter (e.g. "India")
+   * @param {string} type     job type filter (e.g. "full-time", "remote")
+   * @param {number} limit    max results
+   */
+  search: async (keyword = '', location = '', type = '', limit = 30) => {
+    const params = new URLSearchParams();
+    if (keyword)  params.set('keyword', keyword);
+    if (location) params.set('location', location);
+    if (type)     params.set('type', type);
+    params.set('limit', String(limit));
+    const res = await fetch(`http://localhost:9999/api/jobs?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch jobs');
+    return res.json();
+  },
+};
+
 export const dsaPlannerAPI = {
   generateRoadmap: async (profile, days) => {
     const res = await fetch(`${BASE_URL}/api/ai/dsa/generate-roadmap`, {

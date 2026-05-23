@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Search, CheckCircle, Video, Map as MapIcon, BookOpen } from 'lucide-react';
-import { drivesAPI, applicationsAPI, atsAPI } from '../services/api';
+import { LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Search, CheckCircle, Video, Map as MapIcon, BookOpen, MapPin, ExternalLink, Loader2, Building2 } from 'lucide-react';
+import { drivesAPI, applicationsAPI, atsAPI, jobsAPI } from '../services/api';
 import AIInterviewSimulator from '../components/AIInterviewSimulator';
 import DSAPlanner from '../components/DSAPlanner';
 import KnowledgeBase from '../components/KnowledgeBase';
@@ -39,6 +39,13 @@ export default function Dashboard() {
   const [analyzing, setAnalyzing] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Live external jobs
+  const [liveJobs, setLiveJobs] = useState([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [jobKeyword, setJobKeyword] = useState('');
+  const [jobLocation, setJobLocation] = useState('India');
+  const [jobType, setJobType] = useState('');
+
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef();
 
@@ -66,6 +73,16 @@ export default function Dashboard() {
       if(user?.id) applicationsAPI.getByStudent(user.id).then(setApplications).catch(console.error);
     }
   }, [active, role, user?.id]);
+
+  // Live jobs — fire independently on tab switch and filter change
+  useEffect(() => {
+    if (active !== 'find-jobs') return;
+    setLoadingJobs(true);
+    jobsAPI.search(jobKeyword, jobLocation, jobType, 30)
+      .then(res => setLiveJobs(res.data || []))
+      .catch(err => { console.error(err); setLiveJobs([]); })
+      .finally(() => setLoadingJobs(false));
+  }, [active, jobKeyword, jobLocation, jobType]);
 
   const handleAnalyze = async () => {
     if (!selectedFile) { alert("Please select a file first"); return; }
@@ -263,27 +280,174 @@ export default function Dashboard() {
 
           {active === 'find-jobs' && role === 'STUDENT' && (
             <div className="space-y-4">
-              <h2 className="text-white text-xl font-semibold mb-4">Available Drives</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {drives.map(drive => (
-                  <div key={drive.id} className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-5 hover:bg-white/[0.05] transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-white font-medium text-lg">{drive.companyName}</h3>
-                      <span className="bg-purple-500/20 text-purple-300 text-xs px-2 py-1 rounded-md">{drive.packageLpa} LPA</span>
+              {loadingJobs ? (
+                <div className="flex items-center gap-3 py-10 text-slate-400 justify-center">
+                  <Loader2 className="animate-spin" size={24} />
+                  <span>Fetching live opportunities…</span>
+                </div>
+              ) : (
+                <>
+                  {/* ── Search Bar ───────────────────────────────────── */}
+                  <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-4 mb-2">
+                    <div className="flex flex-col sm:flex-row gap-2.5">
+                      <div className="relative flex-1">
+                        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                        <input
+                          type="text"
+                          placeholder="Search job title, skill, company…"
+                          value={jobKeyword}
+                          onChange={e => setJobKeyword(e.target.value)}
+                          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-purple-500/50 transition-colors"
+                        />
+                      </div>
+                      <div className="relative sm:w-40">
+                        <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                        <input
+                          type="text"
+                          placeholder="Location"
+                          value={jobLocation}
+                          onChange={e => setJobLocation(e.target.value)}
+                          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-purple-500/50 transition-colors"
+                        />
+                      </div>
+                      <div className="relative sm:w-40">
+                        <Briefcase size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                        <select
+                          value={jobType}
+                          onChange={e => setJobType(e.target.value)}
+                          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl pl-9 pr-6 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500/50 transition-colors appearance-none cursor-pointer"
+                        >
+                          <option value="">All Types</option>
+                          <option value="full-time">Full-time</option>
+                          <option value="part-time">Part-time</option>
+                          <option value="contract">Contract</option>
+                          <option value="internship">Internship</option>
+                          <option value="remote">Remote</option>
+                        </select>
+                      </div>
                     </div>
-                    <p className="text-slate-400 text-sm mb-4">{drive.role}</p>
-                    <div className="space-y-2 mb-6">
-                      <div className="flex justify-between text-xs text-slate-500"><span>Min CGPA:</span> <span className="text-slate-300">{drive.minCgpa}</span></div>
-                      <div className="flex justify-between text-xs text-slate-500"><span>Branches:</span> <span className="text-slate-300">{drive.allowedBranches}</span></div>
-                      <div className="flex justify-between text-xs text-slate-500"><span>Date:</span> <span className="text-slate-300">{new Date(drive.driveDate).toLocaleDateString()}</span></div>
-                    </div>
-                    <button onClick={() => handleApply(drive.id)} className="w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded-lg text-sm transition-colors font-medium">
-                      Apply Now
-                    </button>
                   </div>
-                ))}
-                {drives.length === 0 && <p className="text-slate-400">No drives available right now.</p>}
-              </div>
+
+                  {/* ── Result Header ────────────────────────────────── */}
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-white text-xl font-semibold">
+                      {liveJobs.length} Opportunity{liveJobs.length !== 1 && 's'} Found
+                    </h2>
+                    <span className="text-slate-500 text-xs">
+                      via Career Nest Board
+                    </span>
+                  </div>
+
+                  {/* ── Job List ─────────────────────────────────────── */}
+                  {liveJobs.length === 0 ? (
+                    <div className="text-center py-16 text-slate-500">
+                      <Building2 size={40} className="mx-auto mb-3 opacity-40" />
+                      <p className="text-sm">No jobs match your current filters.</p>
+                      <p className="text-xs mt-1 text-slate-600">Try clearing the search or changing the location.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {liveJobs.map(job => (
+                        <div
+                          key={job.external_id}
+                          className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5 hover:bg-white/[0.06] transition-colors group"
+                        >
+                          <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+                            {/* Company logo or placeholder */}
+                            <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-purple-600/30 to-blue-600/30 flex items-center justify-center border border-white/[0.08] overflow-hidden">
+                              {job.company_logo ? (
+                                <img
+                                  src={job.company_logo}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                  onError={e => { e.target.style.display = 'none'; }}
+                                />
+                              ) : (
+                                <Building2 size={20} className="text-purple-300/70" />
+                              )}
+                            </div>
+
+                            {/* Job info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div>
+                                  <h3 className="text-white font-medium text-[15px] leading-snug">
+                                    {job.title}
+                                    {job.source && (
+                                      <span className="ml-2 text-[10px] font-medium text-purple-400/70 bg-purple-500/10 px-1.5 py-0.5 rounded">
+                                        {job.source}
+                                      </span>
+                                    )}
+                                  </h3>
+                                  <p className="text-slate-400 text-xs mt-0.5">
+                                    {job.company}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  {job.salary && (
+                                    <span className="bg-emerald-500/15 text-emerald-300 text-xs px-2.5 py-1 rounded-full font-medium border border-emerald-500/20">
+                                      {job.salary}
+                                    </span>
+                                  )}
+                                  {job.job_type && (
+                                    <span className="bg-blue-500/15 text-blue-300 text-xs px-2.5 py-1 rounded-full font-medium border border-blue-500/20">
+                                      {job.job_type}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Meta row */}
+                              {(job.location || job.category) && (
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[11px] text-slate-500">
+                                  {job.location && (
+                                    <span className="flex items-center gap-1">
+                                      <MapPin size={11} /> {job.location}
+                                    </span>
+                                  )}
+                                  {job.category && <span>· {job.category}</span>}
+                                  {job.posted_at && (
+                                    <span>· Posted {new Date(job.posted_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Description */}
+                              {job.description && (
+                                <p className="text-slate-400 text-xs mt-2 leading-relaxed line-clamp-2">
+                                  {job.description}
+                                </p>
+                              )}
+
+                              {/* CTA */}
+                              <div className="flex items-center gap-3 mt-3">
+                                <a
+                                  href={job.apply_url || job.job_url || '#'}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium px-4 py-2 rounded-xl transition-colors"
+                                >
+                                  Apply Now
+                                  <ExternalLink size={12} />
+                                </a>
+                                <a
+                                  href={job.job_url || job.apply_url || '#'}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-slate-400 hover:text-white text-xs px-2 py-2 transition-colors"
+                                  title="View full posting"
+                                >
+                                  View details →
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 

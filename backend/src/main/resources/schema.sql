@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS jobs (
 CREATE TABLE IF NOT EXISTS drives (
     id INT AUTO_INCREMENT PRIMARY KEY,
     company_id INT NOT NULL,
+    company_name VARCHAR(255),
     role VARCHAR(100) NOT NULL,
     package_lpa DECIMAL(5,2),
     min_cgpa DECIMAL(3,2),
@@ -70,6 +71,28 @@ CREATE TABLE IF NOT EXISTS drives (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (company_id) REFERENCES companies(id)
 );
+
+-- Sample companies
+INSERT IGNORE INTO companies (id, name, description, website) VALUES
+(1,  'Google',                 'A global technology company known for Android, Search, Cloud, and AI products.',                    'https://careers.google.com'),
+(2,  'Microsoft',              'A multinational technology corporation developing software, hardware, and cloud services.',          'https://careers.microsoft.com'),
+(3,  'Amazon Web Services',    'Amazon cloud computing division delivering AWS infrastructure and AI-powered solutions.',          'https://aws.amazon.com/careers'),
+(4,  'Infosys',                'A leading Indian multinational IT services and consulting company.',                              'https://www.infosys.com/careers'),
+(5,  'Tata Consultancy Services','The world largest IT services company headquartered in India.',                                 'https://www.tcs.com/careers'),
+(6,  'Walmart',                'A multinational retail corporation building next-gen e-commerce and supply-chain technology.',   'https://careers.walmart.com');
+
+-- Sample drives (sample data seeded for demo purposes)
+INSERT IGNORE INTO drives (id, company_id, company_name, role, package_lpa, min_cgpa, allowed_branches, drive_date, created_at) VALUES
+(1,  1, 'Google',             'Software Engineer',           25.0, 7.5, '["CSE","IT","ECE"]',                 DATE_ADD(CURDATE(), INTERVAL 30 DAY), NOW()),
+(2,  2, 'Microsoft',          'Software Developer (Azure)',  18.0, 7.0, '["CSE","IT"]',                        DATE_ADD(CURDATE(), INTERVAL 30 DAY), NOW()),
+(3,  3, 'Amazon Web Services','Cloud Engineer',              22.0, 8.0, '["CSE","IT","ECE","EEE"]',            DATE_ADD(CURDATE(), INTERVAL 60 DAY), NOW()),
+(4,  4, 'Infosys',            'Data Analyst',                12.0, 6.5, '["CSE","IT","ECE"]',                  DATE_ADD(CURDATE(), INTERVAL 60 DAY), NOW()),
+(5,  5, 'TCS',                'Full Stack Developer',        15.0, 7.0, '["CSE","IT"]',                        DATE_ADD(CURDATE(), INTERVAL 90 DAY), NOW()),
+(6,  1, 'Google',             'Machine Learning Engineer',   35.0, 8.5, '["CSE","ECE"]',                       DATE_ADD(CURDATE(), INTERVAL 90 DAY), NOW()),
+(7,  6, 'Walmart',            'Backend Engineer (Java)',     16.0, 7.0, '["CSE","IT"]',                        DATE_ADD(CURDATE(), INTERVAL 120 DAY),NOW()),
+(8,  4, 'Infosys',            'QA Engineer',                 10.0, 6.0, '["CSE","IT","ECE","EEE","MECH"]',    DATE_ADD(CURDATE(), INTERVAL 120 DAY),NOW()),
+(9,  3, 'Amazon Web Services','DevOps Engineer',             20.0, 7.5, '["CSE","IT"]',                        DATE_ADD(CURDATE(), INTERVAL 120 DAY),NOW()),
+(10, 2, 'Microsoft',          'Frontend Developer (React)',  14.0, 7.0, '["CSE","IT"]',                        DATE_ADD(CURDATE(), INTERVAL 120 DAY),NOW());
 
 -- Applications
 CREATE TABLE IF NOT EXISTS applications (
