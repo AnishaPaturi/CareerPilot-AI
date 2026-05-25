@@ -12,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -44,14 +45,14 @@ public class CareerNestClient {
     // ─── public API ──────────────────────────────────────────────────
 
     /**
+     * Jobs are always sourced from India (hardcoded filter).
      * @param keyword     job title / company keyword (null = any)
-     * @param location    country / city filter (null = any)
      * @param jobType     e.g. "Full-time", "Remote" (null = any)
      * @param limit       max results per request
      * @return list of uniform job records (never null)
      */
-    public List<Map<String, Object>> searchJobs(String keyword, String location,
-                                                String jobType, int limit) {
+    public List<Map<String, Object>> searchJobs(String keyword, String jobType, int limit) {
+        final String LOCATION = "India";
         try {
             long now = System.currentTimeMillis();
             if (now - lastFetchTime > cacheExpiryMs) {
@@ -59,7 +60,7 @@ public class CareerNestClient {
                 lastFetchTime = now;
             }
 
-            String cacheKey = (keyword + "|" + location + "|" + jobType + "|" + limit).toLowerCase();
+            String cacheKey = (keyword + "|" + LOCATION + "|" + jobType + "|" + limit).toLowerCase();
             if (cache.containsKey(cacheKey)) {
                 return cache.get(cacheKey);
             }
@@ -69,13 +70,12 @@ public class CareerNestClient {
 
             if (keyword != null && !keyword.isBlank())
                 url.append("&keyword=").append(java.net.URLEncoder.encode(keyword, "UTF-8"));
-            if (location != null && !location.isBlank())
-                url.append("&location=").append(java.net.URLEncoder.encode(location, "UTF-8"));
+            url.append("&location=").append(java.net.URLEncoder.encode(LOCATION, "UTF-8"));
             if (jobType != null && !jobType.isBlank())
                 url.append("&type=").append(java.net.URLEncoder.encode(jobType, "UTF-8"));
 
             String response = restTemplate.getForObject(url.toString(), String.class);
-            return parseAndFilter(response, keyword, location, jobType, limit, cacheKey);
+            return parseAndFilter(response, keyword, LOCATION, jobType, limit, cacheKey);
 
         } catch (Exception e) {
             return Collections.emptyList();
@@ -86,14 +86,13 @@ public class CareerNestClient {
      * Convenience overload – no filters.
      */
     public List<Map<String, Object>> getFreshJobs(int limit) {
-        return searchJobs(null, null, null, limit);
+        return searchJobs(null, null, limit);
     }
 
     // ─── internals ───────────────────────────────────────────────────
 
     private List<Map<String, Object>> parseAndFilter(String response,
-                                                     String keyword, String location,
-                                                     String jobType, int limit, String cacheKey)
+                                                     String keyword, String jobType, int limit, String cacheKey)
             throws Exception {
 
         JsonNode root = objectMapper.readTree(response);
@@ -109,7 +108,7 @@ public class CareerNestClient {
                 .map(this::mapJobRecord)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .filter(job -> matchesFilters(job, keyword, location, jobType))
+                .filter(job -> matchesFilters(job, keyword, jobType))
                 .limit(limit)
                 .collect(Collectors.toList());
 
@@ -117,22 +116,25 @@ public class CareerNestClient {
         return result;
     }
 
-    private boolean matchesFilters(Map<String, Object> job, String keyword,
-                                   String location, String jobType) {
+    private boolean matchesFilters(Map<String, Object> job, String keyword, String jobType) {
+        // Always enforce India — word-boundary check so "Indiana" / "Indianapolis" don't match
+        Pattern india = Pattern.compile("\\bindia\\b", Pattern.CASE_INSENSITIVE);
+        String jobLoc = str(job, "location");
+        if (jobLoc == null || !india.matcher(jobLoc).find()) return false;
+
         if (keyword != null && !keyword.isBlank()) {
             String kw = keyword.toLowerCase();
             String title = str(job, "title").toLowerCase();
             String company = str(job, "company").toLowerCase();
             if (!title.contains(kw) && !company.contains(kw)) return false;
         }
-        if (location != null && !location.isBlank()) {
-            String loc = location.toLowerCase();
-            if (!str(job, "location").toLowerCase().contains(loc)) return false;
-        }
+
         if (jobType != null && !jobType.isBlank()) {
             String jt = jobType.toLowerCase();
-            if (!str(job, "job_type").toLowerCase().contains(jt)) return false;
+            String jtField = str(job, "job_type");
+            if (jtField != null && !jtField.toLowerCase().contains(jt)) return false;
         }
+
         return true;
     }
 

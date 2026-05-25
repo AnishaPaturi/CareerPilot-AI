@@ -19,10 +19,10 @@ public class JobController {
 
     @GetMapping
     public Object getJobs(@RequestParam(required = false) String keyword,
-                          @RequestParam(required = false) String source,
+                          @RequestParam(required = false) String location,
                           @RequestParam(required = false) String jobType) {
         try {
-            return jobService.getJobs(keyword, source, jobType);
+            return jobService.getJobs(keyword, location, jobType);
         } catch (Exception e) {
             return Collections.singletonMap("data", Collections.emptyList());
         }

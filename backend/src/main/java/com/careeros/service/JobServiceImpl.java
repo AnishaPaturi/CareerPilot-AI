@@ -16,13 +16,11 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
-    public Object getJobs(String keyword, String source, String jobType) {
-        // keyword is the job title / search query; location is passed via source param
-        String location = (source != null && !source.isBlank() && !source.equalsIgnoreCase("all"))
-                ? source : null;
+    public Object getJobs(String keyword, String location, String jobType) {
+        // keyword is the job title / search query; location param is accepted but *always ignored*
+        // — jobs are sourced exclusively from India in the downstream client
         List<Map<String, Object>> jobs = careerNestClient.searchJobs(
                 keyword == null ? null : keyword.trim(),
-                location,
                 jobType == null ? null : jobType.trim(),
                 50                     // max results per call
         );

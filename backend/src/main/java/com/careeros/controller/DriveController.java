@@ -51,6 +51,18 @@ public class DriveController {
         app.setDriveId(driveId);
         app.setStudentId(studentId);
         app.setStatus(com.careeros.model.ApplicationStatus.APPLIED);
+
+        Student student = studentRepository.findById(studentId).orElse(null);
+        if (student != null) {
+            app.setStudentName(student.getName());
+        }
+
+        Drive drive = driveRepository.findById(driveId).orElse(null);
+        if (drive != null) {
+            app.setCompanyName(drive.getCompanyName());
+            app.setRole(drive.getRole());
+        }
+
         applicationRepository.save(app);
         return ResponseEntity.ok("Applied successfully");
     }

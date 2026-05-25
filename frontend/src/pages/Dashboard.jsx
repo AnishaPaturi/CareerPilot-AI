@@ -43,7 +43,6 @@ export default function Dashboard() {
   const [liveJobs, setLiveJobs] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
   const [jobKeyword, setJobKeyword] = useState('');
-  const [jobLocation, setJobLocation] = useState('India');
   const [jobType, setJobType] = useState('');
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -78,11 +77,11 @@ export default function Dashboard() {
   useEffect(() => {
     if (active !== 'find-jobs') return;
     setLoadingJobs(true);
-    jobsAPI.search(jobKeyword, jobLocation, jobType, 30)
+    jobsAPI.search(jobKeyword, jobType, 30)
       .then(res => setLiveJobs(res.data || []))
       .catch(err => { console.error(err); setLiveJobs([]); })
       .finally(() => setLoadingJobs(false));
-  }, [active, jobKeyword, jobLocation, jobType]);
+  }, [active, jobKeyword, jobType]);
 
   const handleAnalyze = async () => {
     if (!selectedFile) { alert("Please select a file first"); return; }
@@ -301,16 +300,6 @@ export default function Dashboard() {
                         />
                       </div>
                       <div className="relative sm:w-40">
-                        <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                        <input
-                          type="text"
-                          placeholder="Location"
-                          value={jobLocation}
-                          onChange={e => setJobLocation(e.target.value)}
-                          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-purple-500/50 transition-colors"
-                        />
-                      </div>
-                      <div className="relative sm:w-40">
                         <Briefcase size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                         <select
                           value={jobType}
@@ -466,8 +455,8 @@ export default function Dashboard() {
                   <tbody className="divide-y divide-white/[0.07]">
                     {applications.map(app => (
                       <tr key={app.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="px-6 py-4 text-white">Drive #{app.driveId}</td>
-                        <td className="px-6 py-4">Student #{app.studentId}</td>
+                        <td className="px-6 py-4 text-white">{app.companyName || 'N/A'}</td>
+                        <td className="px-6 py-4">{app.role || 'N/A'}</td>
                         <td className="px-6 py-4">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
                             app.status === 'APPLIED' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
