@@ -40,7 +40,10 @@ HIGHLIGHTS_STORE = {}
 DOC_COUNTER = 0
 
 def get_embeddings():
-    return HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    return HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        encode_kwargs={"normalize_embeddings": True}
+    )
 
 def get_vector_store(user_id: int):
     if user_id not in VECTOR_STORES:
@@ -75,7 +78,24 @@ async def upload_document(file: UploadFile = File(...), user_id: int = 1):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = text_splitter.split_documents(documents)
     
-    chunks = [c for c in chunks if c.page_content and isinstance(c.page_content, str) and c.page_content.strip()]
+    # Filter and clean chunks to ensure valid string content
+    cleaned_chunks = []
+    for c in chunks:
+        content = c.page_content
+        # Handle list or other non-string types
+        if isinstance(content, list):
+            content = " ".join(str(x) for x in content if x)
+        elif not isinstance(content, str):
+            content = str(content) if content else None
+        if content:
+            content = content.strip()
+            if content:
+                c.page_content = content
+                cleaned_chunks.append(c)
+    chunks = cleaned_chunks
+    
+    if not chunks:
+        return {"id": doc_id, "filename": file.filename, "chunks": 0, "status": "no_valid_content", "message": "No valid text extracted from PDF"}
     
     vector_store = get_vector_store(user_id)
     if vector_store is not None:
