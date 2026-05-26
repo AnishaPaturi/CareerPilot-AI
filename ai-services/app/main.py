@@ -3,8 +3,10 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.routers import interview, ats, dsa_planner, knowledge
 from app.core.config import settings
+import os
 
 app = FastAPI(
     title="AI-CareerOS AI Services",
@@ -24,6 +26,10 @@ app.include_router(interview.router, prefix="/api/ai/interview", tags=["intervie
 app.include_router(ats.router, prefix="/api/ai/ats", tags=["ats"])
 app.include_router(dsa_planner.router, prefix="/api/ai/dsa", tags=["dsa"])
 app.include_router(knowledge.router, prefix="/api/ai/knowledge", tags=["knowledge"])
+
+# Serve uploaded files
+if os.path.exists("./uploads"):
+    app.mount("/uploads", StaticFiles(directory="./uploads"), name="uploads")
 
 @app.get("/health")
 async def health_check():

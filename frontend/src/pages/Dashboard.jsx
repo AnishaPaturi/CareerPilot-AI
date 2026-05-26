@@ -5,7 +5,7 @@ import { LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Se
 import { drivesAPI, applicationsAPI, atsAPI, jobsAPI } from '../services/api';
 import AIInterviewSimulator from '../components/AIInterviewSimulator';
 import DSAPlanner from '../components/DSAPlanner';
-import KnowledgeBase from '../components/KnowledgeBase';
+import StudyMaterials from '../components/StudyMaterials';
 import NotesView from '../pages/Notes';
 import CSNotes from '../components/CSNotes';
 
@@ -516,13 +516,13 @@ export default function Dashboard() {
             <DSAPlanner />
           )}
 
-          {active === 'knowledge' && role === 'STUDENT' && (
-            <KnowledgeBase />
-          )}
+{active === 'knowledge' && role === 'STUDENT' && (
+             <StudyMaterials />
+           )}
 
-          {active === 'notes' && role === 'STUDENT' && (
-            <CSNotes />
-          )}
+           {active === 'notes' && role === 'STUDENT' && (
+             <CSNotes />
+           )}
         </main>
       </div>
     </div>

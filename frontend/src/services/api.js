@@ -125,13 +125,30 @@ export const knowledgeAPI = {
     if (!res.ok) throw new Error('Failed to upload document');
     return res.json();
   },
-  chat: async (query) => {
+  getDocuments: async () => {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/documents`);
+    if (!res.ok) throw new Error('Failed to fetch documents');
+    return res.json();
+  },
+  deleteDocument: async (docId) => {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/document/${docId}`, {
+      method: "DELETE"
+    });
+    if (!res.ok) throw new Error('Failed to delete document');
+    return res.json();
+  },
+  chat: async (query, document_ids) => {
     const res = await fetch(`${BASE_URL}/api/ai/knowledge/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query })
+      body: JSON.stringify({ query, document_ids })
     });
     if (!res.ok) throw new Error('Failed to chat with document');
+    return res.json();
+  },
+  getHistory: async () => {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/history`);
+    if (!res.ok) throw new Error('Failed to fetch history');
     return res.json();
   },
   summarize: async () => {
@@ -141,11 +158,41 @@ export const knowledgeAPI = {
     if (!res.ok) throw new Error('Failed to summarize document');
     return res.json();
   },
-  quiz: async (topic, numQuestions = 5) => {
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/quiz?topic=${encodeURIComponent(topic)}&num_questions=${numQuestions}`, {
+  exportSummaryPDF: async (summary) => {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/summary/convert/pdf`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ summary })
+    });
+    return res.json();
+  },
+  exportSummaryWord: async (summary) => {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/summary/convert/word`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ summary })
+    });
+    return res.json();
+  },
+  quiz: async (topic, num_questions = 5) => {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/quiz?topic=${encodeURIComponent(topic)}&num_questions=${num_questions}`, {
       method: "POST"
     });
     if (!res.ok) throw new Error('Failed to generate quiz');
+    return res.json();
+  },
+  createNote: async (note) => {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(note)
+    });
+    if (!res.ok) throw new Error('Failed to create note');
+    return res.json();
+  },
+  getNotes: async () => {
+    const res = await fetch(`${BASE_URL}/api/ai/knowledge/notes`);
+    if (!res.ok) throw new Error('Failed to fetch notes');
     return res.json();
   }
 };
