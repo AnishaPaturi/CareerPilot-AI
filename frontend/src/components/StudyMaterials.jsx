@@ -192,7 +192,7 @@ export default function StudyMaterials() {
   };
 
   const handleViewDocument = async (doc) => {
-    const fileUrl = `http://localhost:9999/uploads/user_1/${encodeURIComponent(doc.filename)}`;
+    const fileUrl = `http://localhost:8000/uploads/user_1/${encodeURIComponent(doc.filename)}`;
     setPdfUrl(fileUrl);
     setPdfSidebarOpen(true);
   };
@@ -403,45 +403,66 @@ export default function StudyMaterials() {
                 </div>
               )}
 
-              {activeTab === 'notes' && (
-                <div className="space-y-4">
-                  <form onSubmit={async (e) => {
-                    e.preventDefault();
-                    if (!newNote.trim()) return;
-                    try {
-                      await knowledgeAPI.createNote({ document_id: 1, content: newNote });
-                      setNewNote('');
-                    } catch (err) {
-                      alert("Failed to save note.");
-                    }
-                  }} className="flex gap-2">
-                    <input 
-                      type="text" 
-                      value={newNote} 
-                      onChange={e => setNewNote(e.target.value)} 
-                      placeholder="Add a note..." 
-                      className="flex-1 bg-slate-800 text-white p-3 rounded-lg"
-                    />
-                    <button type="submit" className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg">Add</button>
-                  </form>
-                  <div className="space-y-2 max-h-80 overflow-y-auto">
-                    {notes.length === 0 ? (
-                      <p className="text-slate-500">No notes yet.</p>
-                    ) : (
-                      notes.map(note => (
-                        <div key={note.id} className="bg-slate-800 p-3 rounded-lg">
-                          <p className="text-slate-200">{note.content}</p>
-                          <p className="text-xs text-slate-500">{new Date(note.created_at).toLocaleString()}</p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+{activeTab === 'notes' && (
+                 <div className="space-y-4">
+                   <form onSubmit={async (e) => {
+                     e.preventDefault();
+                     if (!newNote.trim()) return;
+                     try {
+                       await knowledgeAPI.createNote({ document_id: 1, content: newNote });
+                       setNewNote('');
+                     } catch (err) {
+                       alert("Failed to save note.");
+                     }
+                   }} className="flex gap-2">
+                     <input 
+                       type="text" 
+                       value={newNote} 
+                       onChange={e => setNewNote(e.target.value)} 
+                       placeholder="Add a note..." 
+                       className="flex-1 bg-slate-800 text-white p-3 rounded-lg"
+                     />
+                     <button type="submit" className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg">Add</button>
+                   </form>
+                   <div className="space-y-2 max-h-80 overflow-y-auto">
+                     {notes.length === 0 ? (
+                       <p className="text-slate-500">No notes yet.</p>
+                     ) : (
+                       notes.map(note => (
+                         <div key={note.id} className="bg-slate-800 p-3 rounded-lg">
+                           <p className="text-slate-200">{note.content}</p>
+                           <p className="text-xs text-slate-500">{new Date(note.created_at).toLocaleString()}</p>
+                         </div>
+                       ))
+                     )}
+                   </div>
+                 </div>
+               )}
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* PDF Viewer Modal */}
+       {pdfUrl && (
+         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+           <div className="bg-slate-900 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+             <div className="flex items-center justify-between p-4 border-b border-white/10">
+               <h3 className="text-white font-semibold">PDF Viewer</h3>
+               <button onClick={() => setPdfUrl(null)} className="text-slate-400 hover:text-white">
+                 ✕
+               </button>
+             </div>
+             <div className="flex-1 overflow-y-auto p-4">
+               <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess}>
+                 {numPages && Array.from(new Array(numPages), (_, i) => (
+                   <Page key={`page_${i + 1}`} pageNumber={i + 1} className="mb-4" />
+                 ))}
+               </Document>
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+   );
 }
