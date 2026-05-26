@@ -198,7 +198,7 @@ async def chat_with_documents(request: ChatRequest, user_id: int = 1):
 async def get_history(user_id: int = 1):
     return {"history": QUERY_HISTORY_STORE.get(user_id, [])}
 
-@router.post("/summary", response_model=SummaryResponse)
+@router.post("/summarize", response_model=SummaryResponse)
 async def summarize_document(user_id: int = 1):
     vector_store = get_vector_store(user_id)
     
