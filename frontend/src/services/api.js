@@ -1,4 +1,5 @@
 const BASE_URL = "http://localhost:9999";
+const AI_BASE_URL = "http://localhost:8000";
 
 export const authAPI = {
   login: async (email, password) => {
@@ -21,6 +22,89 @@ export const authAPI = {
     if (!res.ok) throw new Error(data.message || "Registration failed");
     return data;
   },
+};
+
+export const knowledgeAPI = {
+  upload: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/upload`, {
+      method: "POST",
+      body: formData
+    });
+    if (!res.ok) throw new Error('Failed to upload document');
+    return res.json();
+  },
+  getDocuments: async () => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/documents`);
+    if (!res.ok) throw new Error('Failed to fetch documents');
+    return res.json();
+  },
+  deleteDocument: async (docId) => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/document/${docId}`, {
+      method: "DELETE"
+    });
+    if (!res.ok) throw new Error('Failed to delete document');
+    return res.json();
+  },
+  chat: async (query, document_ids) => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, document_ids })
+    });
+    if (!res.ok) throw new Error('Failed to chat with document');
+    return res.json();
+  },
+  getHistory: async () => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/history`);
+    if (!res.ok) throw new Error('Failed to fetch history');
+    return res.json();
+  },
+  summarize: async () => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/summarize`, {
+      method: "POST"
+    });
+    if (!res.ok) throw new Error('Failed to summarize document');
+    return res.json();
+  },
+  exportSummaryPDF: async (summary) => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/summary/convert/pdf`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ summary })
+    });
+    return res.json();
+  },
+  exportSummaryWord: async (summary) => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/summary/convert/word`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ summary })
+    });
+    return res.json();
+  },
+  quiz: async (topic, num_questions = 5) => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/quiz?topic=${encodeURIComponent(topic)}&num_questions=${num_questions}`, {
+      method: "POST"
+    });
+    if (!res.ok) throw new Error('Failed to generate quiz');
+    return res.json();
+  },
+  createNote: async (note) => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(note)
+    });
+    if (!res.ok) throw new Error('Failed to create note');
+    return res.json();
+  },
+  getNotes: async () => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/notes`);
+    if (!res.ok) throw new Error('Failed to fetch notes');
+    return res.json();
+  }
 };
 
 export const drivesAPI = {
@@ -110,89 +194,6 @@ export const dsaPlannerAPI = {
     if (difficulty) url += `&difficulty=${encodeURIComponent(difficulty)}`;
     const res = await fetch(url, { method: "POST" });
     if (!res.ok) throw new Error('Failed to recommend problems');
-    return res.json();
-  }
-};
-
-export const knowledgeAPI = {
-  upload: async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/upload`, {
-      method: "POST",
-      body: formData
-    });
-    if (!res.ok) throw new Error('Failed to upload document');
-    return res.json();
-  },
-  getDocuments: async () => {
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/documents`);
-    if (!res.ok) throw new Error('Failed to fetch documents');
-    return res.json();
-  },
-  deleteDocument: async (docId) => {
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/document/${docId}`, {
-      method: "DELETE"
-    });
-    if (!res.ok) throw new Error('Failed to delete document');
-    return res.json();
-  },
-  chat: async (query, document_ids) => {
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, document_ids })
-    });
-    if (!res.ok) throw new Error('Failed to chat with document');
-    return res.json();
-  },
-  getHistory: async () => {
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/history`);
-    if (!res.ok) throw new Error('Failed to fetch history');
-    return res.json();
-  },
-  summarize: async () => {
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/summarize`, {
-      method: "POST"
-    });
-    if (!res.ok) throw new Error('Failed to summarize document');
-    return res.json();
-  },
-  exportSummaryPDF: async (summary) => {
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/summary/convert/pdf`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ summary })
-    });
-    return res.json();
-  },
-  exportSummaryWord: async (summary) => {
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/summary/convert/word`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ summary })
-    });
-    return res.json();
-  },
-  quiz: async (topic, num_questions = 5) => {
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/quiz?topic=${encodeURIComponent(topic)}&num_questions=${num_questions}`, {
-      method: "POST"
-    });
-    if (!res.ok) throw new Error('Failed to generate quiz');
-    return res.json();
-  },
-  createNote: async (note) => {
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/notes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(note)
-    });
-    if (!res.ok) throw new Error('Failed to create note');
-    return res.json();
-  },
-  getNotes: async () => {
-    const res = await fetch(`${BASE_URL}/api/ai/knowledge/notes`);
-    if (!res.ok) throw new Error('Failed to fetch notes');
     return res.json();
   }
 };
