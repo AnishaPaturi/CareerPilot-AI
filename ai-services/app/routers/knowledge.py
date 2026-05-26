@@ -40,7 +40,7 @@ HIGHLIGHTS_STORE = {}
 DOC_COUNTER = 0
 
 def get_embeddings():
-    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    return HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 def get_vector_store(user_id: int):
     if user_id not in VECTOR_STORES:
@@ -74,6 +74,8 @@ async def upload_document(file: UploadFile = File(...), user_id: int = 1):
     
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = text_splitter.split_documents(documents)
+    
+    chunks = [c for c in chunks if c.page_content and isinstance(c.page_content, str) and c.page_content.strip()]
     
     vector_store = get_vector_store(user_id)
     if vector_store is not None:
