@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { knowledgeAPI } from '../services/api';
+import { knowledgeAPI, AI_BASE_URL } from '../services/api';
 import { UploadCloud, MessageSquare, FileText, HelpCircle, Copy, Download, FileDown, ChevronLeft, ChevronRight, PlusCircle, Trash2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Document, Page, pdfjs } from 'react-pdf';
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+import pdfWorker from "react-pdf/node_modules/pdfjs-dist/build/pdf.worker.min.mjs?url";
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.min.js`;
 
 export default function StudyMaterials() {
   const [files, setFiles] = useState([]);
@@ -192,9 +195,14 @@ export default function StudyMaterials() {
   };
 
   const handleViewDocument = async (doc) => {
-    const fileUrl = `http://localhost:8000/uploads/user_1/${encodeURIComponent(doc.filename)}`;
-    setPdfUrl(fileUrl);
-    setPdfSidebarOpen(true);
+    try {
+      const data = await knowledgeAPI.viewDocument(doc.id);
+      setPdfUrl(`${AI_BASE_URL}${data.file_url}`);
+      setPdfSidebarOpen(true);
+    } catch (err) {
+      console.error('Failed to view document:', err);
+      alert("Failed to load document. Please try again.");
+    }
   };
 
   const onDocumentLoadSuccess = ({ numPages }) => {
@@ -443,26 +451,37 @@ export default function StudyMaterials() {
          </div>
        )}
 
-       {/* PDF Viewer Modal */}
-       {pdfUrl && (
-         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-           <div className="bg-slate-900 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-             <div className="flex items-center justify-between p-4 border-b border-white/10">
-               <h3 className="text-white font-semibold">PDF Viewer</h3>
-               <button onClick={() => setPdfUrl(null)} className="text-slate-400 hover:text-white">
-                 ✕
-               </button>
-             </div>
-             <div className="flex-1 overflow-y-auto p-4">
-               <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess}>
-                 {numPages && Array.from(new Array(numPages), (_, i) => (
-                   <Page key={`page_${i + 1}`} pageNumber={i + 1} className="mb-4" />
-                 ))}
-               </Document>
-             </div>
-           </div>
-         </div>
-       )}
+{/* PDF Viewer Modal */}
+        {pdfUrl && (
+          <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-white/10">
+                <h3 className="text-white font-semibold">PDF Viewer</h3>
+                <button onClick={() => setPdfUrl(null)} className="text-slate-400 hover:text-white">
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4">
+                <Document 
+                  file={pdfUrl} 
+                  onLoadSuccess={onDocumentLoadSuccess}
+                  onLoadError={(error) => console.error('PDF load error:', error)}
+                >
+                  {numPages && Array.from(new Array(numPages), (_, i) => (
+                    <Page
+                      key={`page_${i + 1}`}
+                      pageNumber={i + 1}
+                      width={800}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                      className="mb-4"
+                    />
+                  ))}
+                </Document>
+              </div>
+            </div>
+          </div>
+        )}
      </div>
    );
 }

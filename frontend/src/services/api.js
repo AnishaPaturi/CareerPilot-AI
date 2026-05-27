@@ -1,6 +1,8 @@
 const BASE_URL = "http://localhost:9999";
 const AI_BASE_URL = "http://localhost:8000";
 
+export { AI_BASE_URL };
+
 export const authAPI = {
   login: async (email, password) => {
     const res = await fetch(`${BASE_URL}/api/auth/login`, {
@@ -45,6 +47,11 @@ export const knowledgeAPI = {
       method: "DELETE"
     });
     if (!res.ok) throw new Error('Failed to delete document');
+    return res.json();
+  },
+  viewDocument: async (docId) => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/knowledge/document/${docId}/file`);
+    if (!res.ok) throw new Error('Failed to view document');
     return res.json();
   },
   chat: async (query, document_ids) => {

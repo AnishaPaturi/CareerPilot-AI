@@ -162,7 +162,9 @@ async def get_document_file(doc_id: int, user_id: int = 1):
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
     
-    return {"file_url": f"/uploads/user_{user_id}/{doc['filename']}"}
+    import urllib.parse
+    encoded_filename = urllib.parse.quote(doc['filename'])
+    return {"file_url": f"/uploads/user_{user_id}/{encoded_filename}"}
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_with_documents(request: ChatRequest, user_id: int = 1):

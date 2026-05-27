@@ -15,8 +15,11 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> List[str]:
         try:
-            return json.loads(self.ALLOWED_ORIGINS)
+            result = json.loads(self.ALLOWED_ORIGINS)
+            print(f"CORS origins: {result}")  # Debug
+            return result
         except:
+            print(f"CORS origins: using default ['http://localhost:5173']")  # Debug
             return ["http://localhost:5173"]
 
 settings = Settings()
