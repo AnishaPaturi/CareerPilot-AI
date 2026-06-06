@@ -42,10 +42,9 @@ public class AiController {
     }
 
     @PostMapping("/ats/rewrite")
-    public ResponseEntity<Map<String, Object>> rewriteResume(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<Map<String, Object>> rewriteResume(@RequestBody Map<String, Object> payload) {
         try {
-            String resumeText = payload.get("resumeText");
-            Map<String, Object> result = aiService.rewriteResumeSection(resumeText, null, null);
+            Map<String, Object> result = aiService.rewriteResumeSection(payload);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));

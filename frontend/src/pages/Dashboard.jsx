@@ -89,6 +89,9 @@ export default function Dashboard() {
       setAnalyzing(true);
       const data = await atsAPI.analyze(selectedFile);
       console.log("Analysis:", data);
+      if (data && data.error) {
+        throw new Error(data.error);
+      }
       navigate("/report", { state: { analysis: data } });
     } catch (err) {
       console.error(err);

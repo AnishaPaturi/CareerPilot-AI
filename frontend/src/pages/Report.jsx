@@ -1,14 +1,23 @@
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer
 } from "recharts";
 import ResumeRewriter from "../components/ResumeRewriter";
 import ResumeChat from "../components/ResumeChat";
+import { downloadResume } from "../utils/resumeTemplate";
 
 export default function Report() {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const [improvedText, setImprovedText] = useState("");
+  const [rewriteMode, setRewriteMode] = useState("improve");
+
+  const handleImproved = (text, mode) => {
+    setImprovedText(text);
+    setRewriteMode(mode);
+  };
 
   const data = location.state?.analysis;
 
@@ -135,7 +144,17 @@ export default function Report() {
       <div className="mt-10 flex gap-4">
 
         <button
-          className="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-xl"
+          onClick={() => {
+            if (improvedText) {
+              downloadResume(improvedText, rewriteMode);
+            }
+          }}
+          disabled={!improvedText}
+          className={`px-6 py-3 rounded-xl font-bold transition-all ${
+            improvedText 
+              ? "bg-purple-600 hover:bg-purple-700 text-white cursor-pointer shadow-md shadow-purple-900/30" 
+              : "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5"
+          }`}
         >
           Download Improved Resume
         </button>
@@ -152,7 +171,7 @@ export default function Report() {
       {/* RESUME BUILDER & CHAT SECTION */}
       <div className="grid md:grid-cols-2 gap-8 mt-8">
         <ResumeChat resumeText={resumeText} />
-        <ResumeRewriter resumeText={resumeText} />
+        <ResumeRewriter resumeText={resumeText} onImproved={handleImproved} />
       </div>
 
     </div>

@@ -225,11 +225,11 @@ export const atsAPI = {
     if (!res.ok) throw new Error('Failed to match resume');
     return res.json();
   },
-  rewrite: async (section) => {
+  rewrite: async ({ section, job_description, mode } = {}) => {
     const res = await fetch(`${BASE_URL}/api/ai/ats/rewrite`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ section })
+      body: JSON.stringify({ section, job_description, mode })
     });
     if (!res.ok) throw new Error('Failed to rewrite resume');
     return res.json();

@@ -79,10 +79,9 @@ public class AiService {
         return analyzeATS(file, targetRole);
     }
 
-    public Map<String, Object> rewriteResumeSection(String resumeText, String section, String suggestions) {
+    public Map<String, Object> rewriteResumeSection(Map<String, Object> payload) {
         String url = FASTAPI_BASE_URL + "/ats/rewrite";
-        Map<String, String> request = Map.of("section", resumeText, "style", "professional");
-        return restTemplate.postForObject(url, request, Map.class);
+        return restTemplate.postForObject(url, payload, Map.class);
     }
 
     public Map<String, Object> chatResume(String resumeText, String question) {

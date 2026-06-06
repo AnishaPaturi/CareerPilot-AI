@@ -27,6 +27,10 @@ setLoading(true);
 try {
   const data = await atsAPI.chat(resumeText, input);
 
+  if (data && data.error) {
+    throw new Error(data.error);
+  }
+
   setMessages([
     ...newMessages,
     { role: "assistant", content: data.answer }
@@ -34,6 +38,10 @@ try {
 
 } catch (err) {
   console.error(err);
+  setMessages([
+    ...newMessages,
+    { role: "assistant", content: "Sorry, I encountered an error: " + err.message }
+  ]);
 }
 
 setLoading(false);

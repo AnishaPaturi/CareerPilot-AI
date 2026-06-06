@@ -11,7 +11,7 @@ try:
     llm = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-3.5-flash",
+        model=os.getenv("OPENROUTER_MODEL", "openrouter/free"),
         temperature=0.7
     )
     prompt = ChatPromptTemplate.from_template("Generate 2 interview questions for a Software Engineer.")

@@ -43,6 +43,100 @@ def extract_text_from_pdf(file_path: str) -> str:
             text += page.extract_text() or ""
     return text
 
+def sanitize_analysis_result(result: dict) -> dict:
+    import re
+    sanitized = {}
+    
+    ats_score = result.get("ats_score", {})
+    if not isinstance(ats_score, dict):
+        ats_score = {}
+        
+    def coerce_to_int(val, default=0) -> int:
+        if isinstance(val, (int, float)):
+            return int(val)
+        if isinstance(val, str):
+            val = val.split('/')[0].replace('%', '').strip()
+            try:
+                return int(val)
+            except ValueError:
+                match = re.search(r'\d+', val)
+                if match:
+                    return int(match.group())
+        return default
+
+    sanitized_score = {
+        "overall_score": coerce_to_int(ats_score.get("overall_score"), 50),
+        "content_score": coerce_to_int(ats_score.get("content_score"), 50),
+        "format_score": coerce_to_int(ats_score.get("format_score"), 50),
+        "keyword_score": coerce_to_int(ats_score.get("keyword_score"), 50)
+    }
+    sanitized["ats_score"] = sanitized_score
+
+    skills_match = result.get("skills_match", {})
+    sanitized_skills = {}
+    if isinstance(skills_match, dict):
+        for k, v in skills_match.items():
+            if isinstance(v, bool):
+                sanitized_skills[str(k)] = v
+            elif isinstance(v, str):
+                val_lower = v.lower()
+                sanitized_skills[str(k)] = val_lower in ("true", "yes", "found", "y", "1")
+            elif isinstance(v, (int, float)):
+                sanitized_skills[str(k)] = bool(v)
+            else:
+                sanitized_skills[str(k)] = False
+    elif isinstance(skills_match, list):
+        for item in skills_match:
+            sanitized_skills[str(item)] = True
+    sanitized["skills_match"] = sanitized_skills
+
+    missing = result.get("missing_skills", [])
+    if isinstance(missing, list):
+        sanitized["missing_skills"] = [str(x) for x in missing]
+    else:
+        sanitized["missing_skills"] = []
+
+    suggestions = result.get("suggestions", [])
+    if isinstance(suggestions, list):
+        sanitized["suggestions"] = [str(x) for x in suggestions]
+    else:
+        sanitized["suggestions"] = []
+
+    summary = result.get("summary", "")
+    sanitized["summary"] = str(summary) if summary else "No summary provided."
+    
+    return sanitized
+
+def sanitize_job_match(result: dict) -> dict:
+    import re
+    sanitized = {}
+    
+    def coerce_to_int(val, default=0) -> int:
+        if isinstance(val, (int, float)):
+            return int(val)
+        if isinstance(val, str):
+            val = val.split('/')[0].replace('%', '').strip()
+            try:
+                return int(val)
+            except ValueError:
+                match = re.search(r'\d+', val)
+                if match:
+                    return int(match.group())
+        return default
+        
+    sanitized["match_percentage"] = coerce_to_int(result.get("match_percentage"), 0)
+    
+    matched = result.get("matched_skills", [])
+    sanitized["matched_skills"] = [str(x) for x in matched] if isinstance(matched, list) else []
+    
+    missing = result.get("missing_skills", [])
+    sanitized["missing_skills"] = [str(x) for x in missing] if isinstance(missing, list) else []
+    
+    suggestions = result.get("suggestions", [])
+    sanitized["suggestions"] = [str(x) for x in suggestions] if isinstance(suggestions, list) else []
+    
+    return sanitized
+
 @router.post("/analyze", response_model=ResumeAnalysis)
 async def analyze_resume(file: UploadFile = File(...)):
     llm = ChatOpenAI(
@@ -61,7 +155,7 @@ async def analyze_resume(file: UploadFile = File(...)):
     
     try:
         resume_text = extract_text_from_pdf(tmp_file_path)
-    except:
+    except Exception:
         resume_text = contents.decode('utf-8', errors='ignore')
     finally:
         try:
@@ -87,11 +181,23 @@ async def analyze_resume(file: UploadFile = File(...)):
     Focus on: keywords, formatting, action verbs, quantifiable achievements
     """)
     
-    chain = prompt | llm | parser
-    result = chain.invoke({"resume_text": resume_text[:3000]})
-    
-    result["extracted_text"] = resume_text
-    return ResumeAnalysis(**result)
+    try:
+        chain = prompt | llm | parser
+        result = chain.invoke({"resume_text": resume_text[:3000]})
+        
+        # Sanitize result to match Pydantic schema types and structure
+        sanitized = sanitize_analysis_result(result)
+        sanitized["extracted_text"] = resume_text
+        return ResumeAnalysis(**sanitized)
+    except Exception as e:
+        import traceback
+        import sys
+        print("ERROR during resume analysis:", file=sys.stderr)
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Resume analysis failed. Error: {str(e)}"
+        )
 
 @router.post("/match-job", response_model=JobMatchResponse)
 async def match_resume_to_job(request: JobMatchRequest):
@@ -111,14 +217,28 @@ async def match_resume_to_job(request: JobMatchRequest):
     Return JSON: {{match_percentage, matched_skills, missing_skills, suggestions}}
     """)
     
-    chain = prompt | llm | JsonOutputParser()
-    result = chain.invoke(request.dict())
-    
-    return JobMatchResponse(**result)
+    try:
+        chain = prompt | llm | JsonOutputParser()
+        result = chain.invoke(request.dict())
+        
+        # Sanitize result to match Pydantic schema types and structure
+        sanitized = sanitize_job_match(result)
+        return JobMatchResponse(**sanitized)
+    except Exception as e:
+        import traceback
+        import sys
+        print("ERROR during resume matching:", file=sys.stderr)
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Resume matching failed. Error: {str(e)}"
+        )
 
 class RewriteRequest(BaseModel):
-    section: str
+    section: Optional[str] = ""
     style: str = "professional"
+    job_description: Optional[str] = None
+    mode: str = "improve"  # "improve" or "scratch"
 
 class ChatResumeRequest(BaseModel):
     resume_text: str
@@ -133,17 +253,73 @@ async def rewrite_resume_section(request: RewriteRequest):
         temperature=0.7
     )
     
-    prompt = ChatPromptTemplate.from_template("""
-    Rewrite this resume section to be more {style} and ATS-friendly:
-    
-    Original: {section}
-    
-    Make it more impactful with action verbs and quantifiable results.
-    """)
-    
-    chain = prompt | llm | StrOutputParser()
-    result = chain.invoke({"section": request.section, "style": request.style})
-    
+    if request.mode == "scratch":
+        system_prompt = (
+            "You are an expert resume writer. Generate a comprehensive, professional, and ATS-friendly resume from scratch.\n\n"
+            "Job Description (Target Role):\n"
+            "{job_description}\n\n"
+            "Guidelines:\n"
+            "1. Tailor the resume specifically to the job description provided above, highlighting relevant skills and keywords.\n"
+            "2. Structure it with clear sections: Contact Info, Professional Summary, Work Experience (with bullet points using action verbs and placeholders for metrics like '[X]%'), Education, and Skills.\n"
+            "3. Use a clean, plain text markdown format."
+        )
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", "Generate a new resume based on the target job description.")
+        ])
+        chain = prompt | llm | StrOutputParser()
+        try:
+            result = chain.invoke({"job_description": request.job_description or "General Professional Resume Outline"})
+        except Exception as e:
+            import traceback
+            import sys
+            print("ERROR during resume rewriting (scratch):", file=sys.stderr)
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Rewrite failed. Error: {str(e)}"
+            )
+    else:
+        # mode == "improve"
+        system_prompt = (
+            "You are an expert resume rewriter. Rewrite the following resume section to make it highly impactful, professional, and ATS-friendly.\n\n"
+            "Original Section:\n"
+            "{section}\n\n"
+        )
+        if request.job_description:
+            system_prompt += (
+                "Job Description (Target Role):\n"
+                "{job_description}\n\n"
+                "Strict Instructions:\n"
+                "Align the rewritten text specifically to match the requirements, skills, and key phrases found in the job description.\n\n"
+            )
+        system_prompt += (
+            "Guidelines:\n"
+            "1. Improve action verbs, sentence structure, and make bullet points punchy.\n"
+            "2. Whenever possible, structure sentences to show achievement and impact (e.g. Accomplished [X] as measured by [Y] by doing [Z]).\n"
+            "3. Retain the core factual details from the original section but present them with maximum impact."
+        )
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", "Rewrite the resume section in a {style} style.")
+        ])
+        chain = prompt | llm | StrOutputParser()
+        try:
+            result = chain.invoke({
+                "section": request.section,
+                "style": request.style,
+                "job_description": request.job_description or ""
+            })
+        except Exception as e:
+            import traceback
+            import sys
+            print("ERROR during resume rewriting (improve):", file=sys.stderr)
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Rewrite failed. Error: {str(e)}"
+            )
+        
     return {"rewritten": result}
 
 @router.post("/chat")
@@ -164,6 +340,16 @@ async def chat_resume(request: ChatResumeRequest):
     """)
     
     chain = prompt | llm | StrOutputParser()
-    result = chain.invoke({"resume_text": request.resume_text, "question": request.question})
+    try:
+        result = chain.invoke({"resume_text": request.resume_text, "question": request.question})
+    except Exception as e:
+        import traceback
+        import sys
+        print("ERROR during resume chat:", file=sys.stderr)
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Chat failed. Error: {str(e)}"
+        )
     
     return {"answer": result}
