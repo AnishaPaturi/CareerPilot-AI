@@ -81,7 +81,7 @@ async def upload_document(file: UploadFile = File(...), user_id: int = 1):
     
     # Filter and clean chunks to ensure valid string content
     cleaned_chunks = []
-    for c in chunks:
+    for idx, c in enumerate(chunks):
         content = c.page_content
         # Handle list or other non-string types
         if isinstance(content, list):
@@ -92,6 +92,7 @@ async def upload_document(file: UploadFile = File(...), user_id: int = 1):
             content = content.strip()
             if content:
                 c.page_content = content
+                c.metadata["chunk_index"] = idx
                 cleaned_chunks.append(c)
     chunks = cleaned_chunks
     
@@ -239,12 +240,59 @@ async def summarize_document(user_id: int = 1):
             max_tokens=4096
         )
         
-        docs = vector_store.as_retriever(search_kwargs={"k": 50}).invoke("summarize main points")
-        context = "\n\n".join(doc.page_content for doc in docs)
+        # Retrieve all documents to reconstruct full context in correct reading order
+        try:
+            collection = vector_store.get()
+            documents_text = collection.get('documents', [])
+            metadatas = collection.get('metadatas', [])
+            
+            # Group and sort chunks by document filename and page/index
+            from collections import defaultdict
+            grouped_docs = defaultdict(list)
+            
+            for idx, (doc_text, meta) in enumerate(zip(documents_text, metadatas)):
+                source = meta.get('source', 'Unknown Document')
+                filename = os.path.basename(source)
+                page = meta.get('page', 0)
+                chunk_idx = meta.get('chunk_index', idx)
+                grouped_docs[filename].append((page, chunk_idx, doc_text))
+            
+            formatted_contexts = []
+            for filename, chunks_list in grouped_docs.items():
+                # Sort chunks by page first, then by chunk_index
+                chunks_list.sort(key=lambda x: (x[0], x[1]))
+                doc_context = "\n\n".join(text for page, chunk_idx, text in chunks_list)
+                formatted_contexts.append(f"--- DOCUMENT: {filename} ---\n{doc_context}")
+            
+            context = "\n\n\n".join(formatted_contexts)
+        except Exception as e:
+            # Fallback to similarity search if .get() fails
+            docs = vector_store.as_retriever(search_kwargs={"k": 50}).invoke("summarize main points")
+            context = "\n\n".join(doc.page_content for doc in docs)
+        
+        system_prompt = (
+            "You are an expert document analysis and synthesis AI. Your task is to generate a highly accurate, structured, "
+            "and comprehensive summary of the provided document content.\n\n"
+            "Strict Instructions:\n"
+            "1. Grounding: Rely ONLY on the clear facts directly mentioned in the context. Do not assume, extrapolate, "
+            "or use external/general knowledge. If a topic is not in the text, do not mention it.\n"
+            "2. Structure: Format the summary beautifully with the following sections:\n"
+            "   - **Executive Summary**: A concise, high-level overview of the document's purpose, main themes, and key conclusion.\n"
+            "   - **Key Concepts & Core Topics**: A structured, bulleted list of the main concepts, subjects, or modules covered in the document.\n"
+            "   - **Detailed Breakdown**: A detailed summary organized by sections, chapters, or topics as they appear in the source. "
+            "Provide detailed summaries of findings, arguments, formulas, or methodologies presented in each section.\n"
+            "   - **Actionable Takeaways & Key Takeouts**: Important takeaways, recommendations, conclusions, or highlights mentioned in the document.\n"
+            "3. Multi-Document Handling: If the context contains multiple separate documents (indicated by '--- DOCUMENT: [filename] ---'), "
+            "provide a distinct summary section for each document, clearly labeled with its filename, and then a final section comparing or connecting them if relevant.\n"
+            "4. Tone and Style: Use professional, objective language. Keep formatting clean with clear markdown headings, bold text, and bullet points. "
+            "Avoid generic summaries; ensure you mention specific terms, names, figures, and facts from the text.\n\n"
+            "Document Content:\n"
+            "{context}"
+        )
         
         prompt = ChatPromptTemplate.from_messages([
-            ("system", "Summarize the following document content concisely.\n\n{context}"),
-            ("human", "Provide a key point summary.")
+            ("system", system_prompt),
+            ("human", "Provide a detailed and highly accurate summary of the document(s) following the structural and grounding guidelines.")
         ])
         
         summary = (prompt | llm | StrOutputParser()).invoke({"context": context})
