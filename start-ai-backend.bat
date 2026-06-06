@@ -1,4 +1,4 @@
-#!/bin/bash
-# Start AI Services Backend
-cd "$(dirname "$0")/ai-services"
-uvicorn app.main:app --port 8000 --host 0.0.0.0
+@echo off
+REM Start AI Services Backend
+cd /d "%~dp0ai-services"
+python -m uvicorn app.main:app --port 8000 --host 0.0.0.0

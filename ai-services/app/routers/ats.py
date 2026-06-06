@@ -7,6 +7,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 import pdfplumber
+import tempfile
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -46,18 +48,27 @@ async def analyze_resume(file: UploadFile = File(...)):
     llm = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-2.0-flash-001",
+        model=settings.OPENROUTER_MODEL,
         temperature=0.3
     )
     
     contents = await file.read()
-    with open(f"/tmp/{file.filename}", "wb") as f:
-        f.write(contents)
+    
+    # Use a secure, cross-platform temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+        tmp_file.write(contents)
+        tmp_file_path = tmp_file.name
     
     try:
-        resume_text = extract_text_from_pdf(f"/tmp/{file.filename}")
+        resume_text = extract_text_from_pdf(tmp_file_path)
     except:
-        resume_text = contents.decode('utf-8')
+        resume_text = contents.decode('utf-8', errors='ignore')
+    finally:
+        try:
+            if os.path.exists(tmp_file_path):
+                os.remove(tmp_file_path)
+        except Exception:
+            pass
     
     parser = JsonOutputParser()
     
@@ -87,7 +98,7 @@ async def match_resume_to_job(request: JobMatchRequest):
     llm = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-2.0-flash-001",
+        model=settings.OPENROUTER_MODEL,
         temperature=0.3
     )
     
@@ -118,7 +129,7 @@ async def rewrite_resume_section(request: RewriteRequest):
     llm = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-2.0-flash-001",
+        model=settings.OPENROUTER_MODEL,
         temperature=0.7
     )
     
@@ -140,7 +151,7 @@ async def chat_resume(request: ChatResumeRequest):
     llm = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-2.0-flash-001",
+        model=settings.OPENROUTER_MODEL,
         temperature=0.3
     )
     

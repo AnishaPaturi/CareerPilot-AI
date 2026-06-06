@@ -19,7 +19,7 @@ public class AiService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String FASTAPI_BASE_URL = "http://localhost:8000/api";
+    private final String FASTAPI_BASE_URL = "http://localhost:8000/api/ai";
 
     public Map<String, Object> parseResumeForProfile(MultipartFile file) {
         try {

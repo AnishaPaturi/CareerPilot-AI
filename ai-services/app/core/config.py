@@ -5,6 +5,7 @@ import json
 class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENROUTER_API_KEY: str
+    OPENROUTER_MODEL: str = "google/gemini-3.5-flash"
     CHROMA_DB_DIR: str = "./chroma_db"
     UPLOAD_DIR: str = "./uploads"
     ALLOWED_ORIGINS: str = '["http://localhost:5173"]'

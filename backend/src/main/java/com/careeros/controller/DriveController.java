@@ -52,7 +52,7 @@ public class DriveController {
         app.setStudentId(studentId);
         app.setStatus(com.careeros.model.ApplicationStatus.APPLIED);
 
-        Student student = studentRepository.findById(studentId).orElse(null);
+        Student student = studentRepository.findById(studentId);
         if (student != null) {
             app.setStudentName(student.getName());
         }

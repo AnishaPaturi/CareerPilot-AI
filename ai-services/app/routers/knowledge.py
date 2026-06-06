@@ -12,6 +12,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -176,7 +177,7 @@ async def chat_with_documents(request: ChatRequest, user_id: int = 1):
     llm = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-2.0-flash-001",
+        model=settings.OPENROUTER_MODEL,
         temperature=0.1
     )
     
@@ -224,29 +225,34 @@ async def get_history(user_id: int = 1):
 
 @router.post("/summarize", response_model=SummaryResponse)
 async def summarize_document(user_id: int = 1):
-    vector_store = get_vector_store(user_id)
-    
-    if vector_store is None:
-        raise HTTPException(status_code=400, detail="No documents uploaded")
-    
-    llm = ChatOpenAI(
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-2.0-flash-001",
-        temperature=0.1,
-        max_tokens=4096
-    )
-    
-    docs = vector_store.as_retriever(search_kwargs={"k": 50}).invoke("summarize main points")
-    context = "\n\n".join(doc.page_content for doc in docs)
-    
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "Summarize the following document content concisely.\n\n{context}"),
-        ("human", "Provide a key point summary.")
-    ])
-    
-    summary = (prompt | llm | StrOutputParser()).invoke({"context": context})
-    return SummaryResponse(summary=summary)
+    try:
+        vector_store = get_vector_store(user_id)
+        
+        if vector_store is None:
+            raise HTTPException(status_code=400, detail="No documents uploaded")
+        
+        llm = ChatOpenAI(
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+            base_url="https://openrouter.ai/api/v1",
+            model=settings.OPENROUTER_MODEL,
+            temperature=0.1,
+            max_tokens=4096
+        )
+        
+        docs = vector_store.as_retriever(search_kwargs={"k": 50}).invoke("summarize main points")
+        context = "\n\n".join(doc.page_content for doc in docs)
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "Summarize the following document content concisely.\n\n{context}"),
+            ("human", "Provide a key point summary.")
+        ])
+        
+        summary = (prompt | llm | StrOutputParser()).invoke({"context": context})
+        return SummaryResponse(summary=summary)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/summary/convert/pdf")
 async def convert_summary_to_pdf(summary: str):
@@ -288,35 +294,40 @@ async def convert_summary_to_word(summary: str):
 
 @router.post("/quiz")
 async def generate_quiz(topic: str, user_id: int = 1, num_questions: int = 10):
-    vector_store = get_vector_store(user_id)
-    
-    if vector_store is None:
-        raise HTTPException(status_code=400, detail="No documents uploaded")
-    
-    llm = ChatOpenAI(
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-2.0-flash-001",
-        temperature=0.5
-    )
-    
-    docs = vector_store.as_retriever(search_kwargs={"k": 20}).invoke(topic)
-    context = "\n\n".join(doc.page_content for doc in docs)
-    
-    prompt = ChatPromptTemplate.from_template("""
-    Generate {num_questions} multiple choice questions about: {topic}
-    Based on content: {context}
-    
-    Format JSON array: [{{"question", "options":["A","B","C","D"], "correct", "explanation"}}]
-    """)
-    
-    result = (prompt | llm | StrOutputParser()).invoke({"topic": topic, "num_questions": num_questions, "context": context})
-    
     try:
-        parsed = json.loads(result)
-        return parsed
-    except:
-        return []
+        vector_store = get_vector_store(user_id)
+        
+        if vector_store is None:
+            raise HTTPException(status_code=400, detail="No documents uploaded")
+        
+        llm = ChatOpenAI(
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+            base_url="https://openrouter.ai/api/v1",
+            model=settings.OPENROUTER_MODEL,
+            temperature=0.5
+        )
+        
+        docs = vector_store.as_retriever(search_kwargs={"k": 20}).invoke(topic)
+        context = "\n\n".join(doc.page_content for doc in docs)
+        
+        prompt = ChatPromptTemplate.from_template("""
+        Generate {num_questions} multiple choice questions about: {topic}
+        Based on content: {context}
+        
+        Format JSON array: [{{"question", "options":["A","B","C","D"], "correct", "explanation"}}]
+        """)
+        
+        result = (prompt | llm | StrOutputParser()).invoke({"topic": topic, "num_questions": num_questions, "context": context})
+        
+        try:
+            parsed = json.loads(result)
+            return parsed
+        except:
+            return []
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 class NoteCreate(BaseModel):
     document_id: int = 1

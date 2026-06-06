@@ -75,7 +75,7 @@ public class CareerNestClient {
                 url.append("&type=").append(java.net.URLEncoder.encode(jobType, "UTF-8"));
 
             String response = restTemplate.getForObject(url.toString(), String.class);
-            return parseAndFilter(response, keyword, LOCATION, jobType, limit, cacheKey);
+            return parseAndFilter(response, keyword, jobType, limit, cacheKey);
 
         } catch (Exception e) {
             return Collections.emptyList();

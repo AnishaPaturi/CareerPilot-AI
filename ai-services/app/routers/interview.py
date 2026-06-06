@@ -5,6 +5,7 @@ import os
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -34,7 +35,7 @@ async def generate_interview_questions(request: InterviewRequest):
     llm = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-2.0-flash-001",
+        model=settings.OPENROUTER_MODEL,
         temperature=0.7
     )
     
@@ -71,7 +72,7 @@ async def evaluate_interview_answer(submission: AnswerSubmission):
     llm = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-2.0-flash-001",
+        model=settings.OPENROUTER_MODEL,
         temperature=0.3
     )
     

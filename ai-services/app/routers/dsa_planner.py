@@ -5,6 +5,7 @@ import os
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -43,7 +44,7 @@ async def generate_dsa_roadmap(request: RoadmapRequest):
     llm = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-2.0-flash-001",
+        model=settings.OPENROUTER_MODEL,
         temperature=0.5
     )
     
@@ -76,7 +77,7 @@ async def recommend_problems(topic: str, count: int = 10, difficulty: Optional[s
     llm = ChatOpenAI(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url="https://openrouter.ai/api/v1",
-        model="google/gemini-2.0-flash-001",
+        model=settings.OPENROUTER_MODEL,
         temperature=0.5
     )
     

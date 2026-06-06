@@ -28,7 +28,7 @@ public class AiController {
         }
     }
 
-    @PostMapping("/analyze-ats")
+    @PostMapping("/ats/analyze")
     public ResponseEntity<Map<String, Object>> analyzeATS(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "jobDescription", required = false) String jobDescription) {
@@ -41,7 +41,7 @@ public class AiController {
         }
     }
 
-    @PostMapping("/rewrite-resume")
+    @PostMapping("/ats/rewrite")
     public ResponseEntity<Map<String, Object>> rewriteResume(@RequestBody Map<String, String> payload) {
         try {
             String resumeText = payload.get("resumeText");
@@ -52,7 +52,7 @@ public class AiController {
         }
     }
 
-    @PostMapping("/chat-resume")
+    @PostMapping("/ats/chat")
     public ResponseEntity<Map<String, Object>> chatResume(@RequestBody Map<String, String> payload) {
         try {
             String resumeText = payload.get("resumeText");
