@@ -39,16 +39,12 @@ class ProblemRecommendation(BaseModel):
     url: str
     reason: str
 
+class ProblemRecommendations(BaseModel):
+    recommendations: List[ProblemRecommendation]
+
 @router.post("/generate-roadmap", response_model=DSARoadmap)
 async def generate_dsa_roadmap(request: RoadmapRequest):
-    llm = ChatOpenAI(
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        base_url="https://openrouter.ai/api/v1",
-        model=settings.OPENROUTER_MODEL,
-        temperature=0.5
-    )
-    
-    parser = JsonOutputParser()
+    parser = JsonOutputParser(pydantic_object=DSARoadmap)
     
     prompt = ChatPromptTemplate.from_template("""
     Generate a {days}-day DSA roadmap for:
@@ -57,40 +53,82 @@ async def generate_dsa_roadmap(request: RoadmapRequest):
     - Time available: {time_available} hours per day
     - Weak areas: {weak_areas}
     
-    Return JSON with daily_goals array containing each day's topic and problems.
     Focus on LeetCode-style problems with progression from easy to hard.
+    
+    {format_instructions}
     """)
     
-    chain = prompt | llm | parser
-    result = chain.invoke({
-        "current_level": request.profile.current_level,
-        "target_company": request.profile.target_company,
-        "time_available": request.profile.time_available,
-        "weak_areas": request.profile.weak_areas,
-        "days": request.days
-    })
-    
-    return DSARoadmap(**result)
+    models = []
+    for m in [settings.OPENROUTER_MODEL, "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+        if m and m not in models:
+            models.append(m)
+            
+    last_error = None
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.5
+            )
+            chain = prompt | llm | parser
+            result = chain.invoke({
+                "current_level": request.profile.current_level,
+                "target_company": request.profile.target_company,
+                "time_available": request.profile.time_available,
+                "weak_areas": request.profile.weak_areas,
+                "days": request.days,
+                "format_instructions": parser.get_format_instructions()
+            })
+            return DSARoadmap(**result)
+        except Exception as e:
+            last_error = e
+            import sys
+            print(f"Failed to generate roadmap using model {model}: {e}", file=sys.stderr)
+            continue
+            
+    raise HTTPException(status_code=500, detail=f"All models failed. Last error: {str(last_error)}")
 
 @router.post("/recommend-problems", response_model=List[ProblemRecommendation])
 async def recommend_problems(topic: str, count: int = 10, difficulty: Optional[str] = None):
-    llm = ChatOpenAI(
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        base_url="https://openrouter.ai/api/v1",
-        model=settings.OPENROUTER_MODEL,
-        temperature=0.5
-    )
+    parser = JsonOutputParser(pydantic_object=ProblemRecommendations)
     
     prompt = ChatPromptTemplate.from_template("""
     Recommend {count} LeetCode problems for topic: {topic}
     {difficulty_filter}
     
-    Return JSON array with: title, difficulty, topic, url (use leetcode.com/problems/slug), reason
+    {format_instructions}
     """)
     
     difficulty_filter = f"Difficulty: {difficulty}" if difficulty else "Mix of difficulties"
     
-    chain = prompt | llm | JsonOutputParser()
-    result = chain.invoke({"topic": topic, "count": count, "difficulty_filter": difficulty_filter})
-    
-    return result
+    models = []
+    for m in [settings.OPENROUTER_MODEL, "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+        if m and m not in models:
+            models.append(m)
+            
+    last_error = None
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.5
+            )
+            chain = prompt | llm | parser
+            result = chain.invoke({
+                "topic": topic, 
+                "count": count, 
+                "difficulty_filter": difficulty_filter,
+                "format_instructions": parser.get_format_instructions()
+            })
+            return result.get("recommendations", [])
+        except Exception as e:
+            last_error = e
+            import sys
+            print(f"Failed to recommend problems using model {model}: {e}", file=sys.stderr)
+            continue
+            
+    raise HTTPException(status_code=500, detail=f"All models failed. Last error: {str(last_error)}")
