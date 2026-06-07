@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # 1. Redis Cache
+  redis:
+    image: redis:7.2-alpine
+    container_name: careeros-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # 2. RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: careeros-rabbitmq
+    ports:
+      - "5672:5672"    # AMQP broker port
+      - "15672:15672"  # Management Web UI Console
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+  # 3. Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    container_name: careeros-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+
+  # 4. Prometheus Metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: careeros-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prom_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  # 5. Loki Log Aggregator
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: careeros-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+
+  # 6. Grafana Dashboards
+  grafana:
+    image: grafana/grafana:10.3.3
+    container_name: careeros-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  rabbitmq_data:
+  es_data:
+  prom_data:
+  grafana_data:

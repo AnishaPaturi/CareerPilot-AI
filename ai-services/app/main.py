@@ -4,6 +4,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from prometheus_fastapi_instrumentator import Instrumentator
 from app.routers import interview, ats, dsa_planner, knowledge
 from app.core.config import settings
 import os
@@ -13,6 +14,10 @@ app = FastAPI(
     description="AI-powered career services including interview simulation, ATS analysis, and DSA planning",
     version="1.0.0"
 )
+
+# Instrument the FastAPI app and expose /metrics endpoint
+Instrumentator().instrument(app).expose(app)
+
 
 app.add_middleware(
     CORSMiddleware,

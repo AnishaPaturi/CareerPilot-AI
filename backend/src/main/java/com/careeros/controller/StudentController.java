@@ -1,10 +1,15 @@
 package com.careeros.controller;
 
+import com.careeros.config.RabbitMQConfig;
+import com.careeros.dto.ResumeParseTask;
 import com.careeros.model.ResumeAnalysis;
 import com.careeros.model.Student;
 import com.careeros.repository.ResumeAnalysisRepository;
 import com.careeros.repository.StudentRepository;
 import com.careeros.service.AiService;
+import com.careeros.service.FileStorageService;
+import com.careeros.service.ResumeProcessingService;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +32,15 @@ public class StudentController {
     @Autowired
     private AiService aiService;
 
+    @Autowired
+    private ResumeProcessingService resumeProcessingService;
+
+    @Autowired
+    private FileStorageService fileStorageService;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody Student student) {
         studentRepository.save(student);
@@ -42,65 +56,44 @@ public class StudentController {
     public ResponseEntity<Map<String, Object>> parseResume(
             @PathVariable int id,
             @RequestParam("file") MultipartFile file) {
-
         try {
-            Map<String, Object> aiResult = aiService.parseResumeForProfile(file);
-
-            Student student = studentRepository.getById(id);
-            if (student == null) {
-                return ResponseEntity.status(404).body(Map.of("success", false, "message", "Student not found"));
-            }
-
-            String skills = (String) aiResult.getOrDefault("skills", "");
-            String certifications = (String) aiResult.getOrDefault("certifications", "");
-            Object cgpaObj = aiResult.get("cgpa");
-            Double cgpa = cgpaObj instanceof Number ? ((Number) cgpaObj).doubleValue() : null;
-            String education = (String) aiResult.getOrDefault("education", "");
-            String experience = (String) aiResult.getOrDefault("experience", "");
-            String projects = (String) aiResult.getOrDefault("projects", "");
-            String summary = (String) aiResult.getOrDefault("summary", "");
-
-            student.setSkills(skills);
-            student.setCertifications(certifications);
-            if (cgpa != null) student.setCgpa(cgpa);
-            student.setResumeUrl(file.getOriginalFilename());
-            student.setEducation(education);
-            student.setExperience(experience);
-            student.setProjects(projects);
-            student.setSummary(summary);
-            studentRepository.save(student);
-
-            ResumeAnalysis analysis = new ResumeAnalysis();
-            analysis.setStudentId(id);
-            analysis.setSkills(skills);
-            analysis.setCertifications(certifications);
-            analysis.setCgpa(cgpa);
-            analysis.setEducation(education);
-            analysis.setExperience(experience);
-            analysis.setProjects(projects);
-            analysis.setSummary(summary);
-            analysis.setRawAnalysis(aiResult.toString());
-            resumeAnalysisRepository.save(analysis);
-
-            Map<String, Object> parsedData = new HashMap<>();
-            parsedData.put("skills", skills);
-            parsedData.put("certifications", certifications);
-            parsedData.put("cgpa", cgpa);
-            parsedData.put("education", education);
-            parsedData.put("experience", experience);
-            parsedData.put("projects", projects);
-            parsedData.put("summary", summary);
-            parsedData.put("resumeUrl", file.getOriginalFilename());
-            parsedData.put("success", true);
-            parsedData.put("message", "Resume parsed successfully by AI Engine.");
-
+            Map<String, Object> parsedData = resumeProcessingService.processAndSaveResume(id, file);
             return ResponseEntity.ok(parsedData);
-
         } catch (Exception e) {
             System.err.println("Error parsing resume: " + e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of(
                     "success", false,
                     "message", "Failed to parse resume: " + e.getMessage()
+            ));
+        }
+    }
+
+    @PostMapping("/{id}/parse-resume-async")
+    public ResponseEntity<Map<String, Object>> parseResumeAsync(
+            @PathVariable int id,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            Student student = studentRepository.getById(id);
+            if (student == null) {
+                return ResponseEntity.status(404).body(Map.of("success", false, "message", "Student not found"));
+            }
+
+            // 1. Store file locally
+            String storedPath = fileStorageService.storeFile(file);
+
+            // 2. Queue the task
+            ResumeParseTask task = new ResumeParseTask(id, storedPath, file.getOriginalFilename(), null);
+            rabbitTemplate.convertAndSend(RabbitMQConfig.QUEUE_RESUME_PARSE, task);
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Resume parsing job submitted to queue. Results will be saved asynchronously."
+            ));
+        } catch (Exception e) {
+            System.err.println("Error queuing resume: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "Failed to queue resume: " + e.getMessage()
             ));
         }
     }

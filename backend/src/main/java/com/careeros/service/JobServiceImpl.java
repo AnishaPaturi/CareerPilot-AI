@@ -1,6 +1,7 @@
 package com.careeros.service;
 
 import com.careeros.service.careernest.CareerNestClient;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +17,7 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    @Cacheable(value = "jobs", key = "{#keyword, #location, #jobType}", unless = "#result == null")
     public Object getJobs(String keyword, String location, String jobType) {
         // keyword is the job title / search query; location param is accepted but *always ignored*
         // — jobs are sourced exclusively from India in the downstream client

@@ -1,6 +1,7 @@
 package com.careeros.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -100,11 +101,13 @@ public class AiService {
         return restTemplate.postForObject(url, submission, Object.class);
     }
 
+    @Cacheable(value = "dsaRoadmaps", key = "#request.toString()", unless = "#result == null")
     public Object generateDsaRoadmap(Map<String, Object> request) {
         String url = FASTAPI_BASE_URL + "/dsa/generate-roadmap";
         return restTemplate.postForObject(url, request, Object.class);
     }
 
+    @Cacheable(value = "dsaProblems", key = "{#topic, #count, #difficulty}", unless = "#result == null")
     public Object recommendDsaProblems(String topic, Integer count, String difficulty) {
         StringBuilder url = new StringBuilder(FASTAPI_BASE_URL + "/dsa/recommend-problems?topic=" + topic);
         if (count != null) {
@@ -147,6 +150,7 @@ public class AiService {
         return restTemplate.postForObject(url, null, Object.class);
     }
 
+    @Cacheable(value = "knowledgeQuizzes", key = "{#topic, #userId, #numQuestions}", unless = "#result == null")
     public Object generateKnowledgeQuiz(String topic, Integer userId, Integer numQuestions) {
         StringBuilder url = new StringBuilder(FASTAPI_BASE_URL + "/knowledge/quiz?topic=" + topic + "&user_id=" + (userId != null ? userId : 1));
         if (numQuestions != null) {
