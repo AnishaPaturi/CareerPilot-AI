@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { studentsAPI } from '../services/api';
 
 const InterviewContext = createContext(null);
 
@@ -72,6 +73,20 @@ export function InterviewProvider({ children }) {
   const [interviews, setInterviews] = useState(sampleInterviews);
   const [badges, setBadges] = useState(initialBadges);
   const [currentInterview, setCurrentInterview] = useState(null);
+  const [students, setStudents] = useState([]);
+
+  // Fetch registered students from gateway
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const data = await studentsAPI.getAll();
+        setStudents(data);
+      } catch (err) {
+        console.error("Failed to load students in InterviewContext:", err);
+      }
+    };
+    fetchStudents();
+  }, [authUser]);
   
   const [user, setUser] = useState({
     name: authUser?.name || 'Alex Morgan',
@@ -144,7 +159,8 @@ export function InterviewProvider({ children }) {
         currentInterview,
         setCurrentInterview,
         activeTab,
-        setInterviewTab: setActiveTab
+        setInterviewTab: setActiveTab,
+        students
       }}
     >
       {children}

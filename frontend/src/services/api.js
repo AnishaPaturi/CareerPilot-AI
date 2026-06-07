@@ -167,6 +167,14 @@ export const aiInterviewAPI = {
   }
 };
 
+export const studentsAPI = {
+  getAll: async () => {
+    const res = await fetch(`${BASE_URL}/api/students`);
+    if (!res.ok) throw new Error('Failed to fetch students');
+    return res.json();
+  }
+};
+
 export const jobsAPI = {
   /**
    * Fetch live external job listings — always filtered to India via the backend.
