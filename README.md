@@ -1,897 +1,193 @@
-# Unified AI Career Ecosystem — Major Project Architecture
+# AI CareerOS — Unified AI Career Ecosystem
 
-## Vision
+AI CareerOS (also known as **CareerPilot-AI**) is a unified, intelligent career preparation and placement ecosystem. Instead of relying on disconnected tools, the platform consolidates placement management, automated resume auditing, mock interview simulation, DSA roadmapping, and document RAG-based study assistants into a single unified product.
 
-You already built multiple strong standalone projects.
-The real power move now is turning them into one unified ecosystem.
-
-Instead of:
-
-* Resume Builder
-* Resume Analyzer
-* AI Interview
-* Placement Portal
-* PDF Chatbot
-* DSA Planner
-
-…existing as disconnected projects,
-
-You merge them into a single platform:
-
-# "AI CareerOS" (temporary name)
-
-A complete AI-powered student career preparation ecosystem.
-
-This becomes:
-
-* Resume platform
-* Placement management system
-* Interview simulator
-* AI mentor
-* DSA planner
-* Learning assistant
-* ATS analyzer
-* Job recommendation engine
-* Preparation tracker
-
-All in ONE product.
-
-This is not a small college project anymore.
-This becomes startup-level architecture.
+Designed with a high-performance microservices blueprint, it is built to demonstrate startup-level system design and software architecture.
 
 ---
 
-# Your Existing Projects and Their Roles
+## 🏗️ System Architecture
 
-| Existing Project                  | Purpose in Final Ecosystem    |
-| --------------------------------- | ----------------------------- |
-| Interview-Prep/cs-notes           | Learning + preparation module |
-| Smart-Placement-Management-System | Core platform backbone        |
-| AI-pdf-chatbot                    | AI learning assistant         |
-| AI-Interview                      | Interview simulator           |
-| ResumeIQ                          | Resume optimization           |
-| Smart-Resume-Analyzer             | ATS scoring + resume analysis |
-| AlgoMentor-Agentic-DSA-Planner    | DSA roadmap + AI planner      |
-| ResumeBuilder                     | Resume creation module        |
+The platform uses a decoupled backend design: an enterprise-level Spring Boot gateway that manages relational data and role authentication, alongside a Python FastAPI microservice that drives all LLM, RAG, and vector operations.
 
----
-
-# Final Platform Flow
-
-The user journey should feel seamless.
-
----
-
-# USER FLOW
-
-## Step 1 — User Registration
-
-User signs up as:
-
-* Student
-* Admin
-* Recruiter
-
-### Student Dashboard
-
-The student gets:
-
-* Profile
-* Resume
-* Skills
-* Placement eligibility
-* AI recommendations
-* DSA roadmap
-* Interview progress
-* Learning progress
-
-### Admin Dashboard
-
-Admin manages:
-
-* Companies
-* Placement drives
-* Student eligibility
-* Statistics
-* Notifications
-* Reports
-
-### Recruiter Dashboard
-
-Recruiters can:
-
-* Post jobs
-* Shortlist candidates
-* Review resumes
-* Schedule interviews
-
----
-
-# CORE MODULES
-
----
-
-# 1. Smart Placement Management System
-
-This becomes the MAIN BACKEND CORE.
-
-Everything revolves around this.
-
-## Responsibilities
-
-### Placement Features
-
-* Company postings
-* Job eligibility
-* Application tracking
-* Placement rounds
-* Notifications
-* Student shortlist
-* Offer status
-
-### Database Tables
-
-Possible tables:
-
-```sql
-users
-students
-admins
-recruiters
-companies
-jobs
-applications
-interviews
-resumes
-skills
-roadmaps
-mock_interviews
-ai_feedback
+```mermaid
+graph TD
+    User([User: Student / Admin / Recruiter]) -->|React SPA| Frontend[Frontend: React + Vite + Tailwind]
+    Frontend -->|HTTP / JSON / JWT| API_Gateway[API Gateway / Spring Boot]
+    
+    subgraph Spring_Boot_Gateway [Spring Boot Gateway Service (Port 9999)]
+        API_Gateway --> AuthServ[Auth & Profile Management]
+        API_Gateway --> PlacementServ[Placement Drives & Job Postings]
+        API_Gateway --> ProxyServ[AiController: API Router]
+    end
+    
+    ProxyServ -->|REST Proxy / JSON| FastAPI[AI Core: Python FastAPI (Port 8000)]
+    
+    subgraph Python_FastAPI [FastAPI AI Services Core]
+        FastAPI --> ATS[Resume ATS Engine]
+        FastAPI --> RAG[RAG Knowledge Assistant]
+        FastAPI --> Interview[Mock Interview Simulator]
+        FastAPI --> DSA[AlgoMentor DSA Planner]
+    end
+    
+    Spring_Boot_Gateway -->|SQL| MySQL[(MySQL Database)]
+    Python_FastAPI -->|Vector Retrieval| VectorDB[(Chroma Vector DB)]
 ```
 
 ---
 
-# 2. Resume Builder Module
+## 🛠️ Technology Stack
 
-This becomes:
-
-# "Resume Studio"
-
-## Features
-
-### Build Resume
-
-* Drag-and-drop templates
-* Multiple themes
-* Export PDF
-* ATS-friendly formatting
-
-### AI Suggestions
-
-* Improve bullet points
-* Suggest better wording
-* Skill recommendations
-* Missing keyword suggestions
-
-### Backend Flow
-
-```text
-User Inputs Data
-      ↓
-Resume JSON Generated
-      ↓
-Template Engine
-      ↓
-PDF Generated
-      ↓
-Stored in Cloud
-```
+| Layer | Technology | Key Capabilities |
+| --- | --- | --- |
+| **Frontend** | React (Vite), Tailwind CSS, Lucide Icons, Recharts | Dynamic dashboards, responsive controls, visual analytics, charts |
+| **Primary Backend** | Spring Boot, Hibernate / JPA, Spring Security | Role-based authorization, JWT generation, placement tracking |
+| **Relational Database** | MySQL | Relational data, user authentication, application logging |
+| **AI Services Core** | Python FastAPI, Uvicorn | High-performance async API, LangChain integration |
+| **Vector Database** | ChromaDB, Sentence Transformers | Semantic document embeddings, RAG retrieval |
+| **AI Integrations** | OpenRouter API, LangChain Orchestration | Multi-LLM model failovers, local heuristic fallback engines |
+| **Document Utilities** | python-docx, pdfplumber, Web Speech API | Parsing PDFs, compiling structured `.docx` files, voice inputs |
 
 ---
 
-# 3. Smart Resume Analyzer + ResumeIQ
+## 📂 Database Design
 
-These two should be merged together.
+The relational database is managed by MySQL. The system initializes automatically from the [schema.sql](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/resources/schema.sql) on startup.
 
-This becomes:
-
-# "AI ATS Engine"
-
-## Features
-
-### ATS Score
-
-* Resume parsing
-* Keyword matching
-* Formatting analysis
-* Readability analysis
-* Missing skills detection
-
-### Job Match Score
-
-User uploads resume.
-
-System compares:
-
-```text
-Resume
-VS
-Job Description
-```
-
-Then gives:
-
-* Match percentage
-* Missing keywords
-* Skill gaps
-* Suggested improvements
-
-### AI Improvements
-
-Example:
-
-Instead of:
-
-> Worked on Java project
-
-AI rewrites:
-
-> Developed scalable Java-based backend services improving API response time by 30%
-
-Now suddenly the resume looks like it survived corporate warfare.
+### Relational Schema Layout
+* **`users`**: Unified accounts storing name, email, credentials, and account roles (`STUDENT`, `ADMIN`, `RECRUITER`).
+* **`students`**: Detailed profiles tracking CGPA, branches, active backlogs, skills, education, and resume metrics.
+* **`companies`**: Details of corporate recruiters and partner organizations.
+* **`drives`**: Placement drives detailing target roles, salary packages (LPA), eligibility limits (CGPA), and dates.
+* **`applications`**: Application tracking linking students to drives with status stages (`APPLIED`, `SHORTLISTED`, `TEST`, `INTERVIEW`, `SELECTED`, `REJECTED`).
+* **`interviews`**: Corporate interviewer schedules, rounds, feedback notes, and scores.
+* **`resumes`**: Structured template and configuration JSON arrays for students.
+* **`resume_analyses`**: Historical ATS scores, keywords found, missing terms, and feedback suggestions.
+* **`dsa_topics`**: Problem metadata containing categories, difficulty, and LeetCode link keys.
+* **`dsa_roadmaps`**: Personalized roadmaps containing daily goals, timelines, and weak area focus arrays.
+* **`dsa_progress`**: Solution logs tracking problems solved per topic and confidence levels.
+* **`mock_interviews`**: Log of mock interview questions, user transcripts, and detailed evaluation matrices.
+* **`documents`**: Track uploaded study files, text chunks, and storage references for the RAG chatbot.
+* **`query_logs`**: Conversational chat history logs linked to user files.
+* **`notifications`**: Real-time read/unread notifications for placement rounds and updates.
 
 ---
 
-# 4. AI Interview Module
+## 🌟 Core Modules & Features
 
-This becomes:
+### 1. Smart Placement Management Backbone
+* **Student Dashboard**: View personal CGPA eligibility, active job applications, and recommended campus drives.
+* **Admin Controls**: Manage campus postings, company requirements, student backlogs, and review real-time placement funnel funnels.
+* **Job Board**: Query local postings and search live external job listings (filtered to India) powered by the JSearch API.
 
-# "Interview Arena"
+### 2. AI Resume ATS Auditor
+* **ATS Score Meter**: Evaluates resumes in real time, scoring overall rating, content relevance, format readability, and keyword density.
+* **Visual Audit Checklist**: Displays clear indicators (Passed ✅ / Warning ⚠️ / Critical ❌) checklisting formatting compatibility, email/phone header parameters, and standard layout sections.
+* **Target Gap Analysis**: Displays a keyword match heatmap comparing user resume skills against industry standards, highlighting critical missing tools.
+* **Interactive Section Rewriter**: Rewrites weak bullets (e.g. *"I worked on a Java site"*) into impact-driven sentences using action verbs and the STAR methodology (e.g. *"Architected and deployed a scalable Java microservice, reducing response times by 30%"*).
+* **Resume Chatbot (Career GPT)**: Conversational RAG assistant to answer resume questions, suggest phrasing, and offer template adjustments.
+* **Professional DOCX Exporter**: Converts parsed resumes into formatted Microsoft Word (`.docx`) files with modern design elements, layout tables, and styled border lines.
+* **Local Heuristic Fallback Engine**: If OpenRouter free tier keys hit daily rate limits, the FastAPI backend automatically triggers an offline regex parser. It evaluates contact headers, counts metrics, identifies standard skills, and outputs a realistic diagnostic scorecard.
 
-## Features
+### 3. AI Mock Interview Arena
+* **Custom Round Selection**: Select target roles, topics (system design, coding, general, behavioral), experience limits, and specific tech stacks.
+* **Interviewer Simulator**: Dynamic text and voice interview environment powered by the browser's Web Speech API. Includes a simulated recording display and user camera preview to prepare candidates for live webcam settings.
+* **Smart Evaluation Report**: Scores sessions based on technical accuracy, language flow, and confidence, outputting constructive weaknesses and improvement steps.
 
-### AI Mock Interviews
+### 4. AlgoMentor DSA Planner
+* **Dynamic Roadmaps**: Generates custom roadmaps matching target timelines, skill levels, and target tier companies (FAANG, product, service).
+* **Milestone Progress**: Tracks daily challenges, solves progress, and registers confidence levels.
 
-Types:
-
-* HR Interview
-* Technical Interview
-* System Design
-* Behavioral Interview
-* Coding Interview
-
-### Workflow
-
-```text
-User Selects Role
-      ↓
-AI Generates Questions
-      ↓
-User Answers
-      ↓
-Speech/Text Analysis
-      ↓
-AI Feedback
-      ↓
-Score + Suggestions
-```
-
-### Advanced Features
-
-#### Voice Interview
-
-Use:
-
-* Web Speech API
-* Whisper API
-* ElevenLabs
-
-#### AI Evaluation
-
-Evaluate:
-
-* Confidence
-* Communication
-* Technical accuracy
-* Grammar
-* Fluency
-
-### Store Results
-
-Track:
-
-* Improvement over time
-* Weak areas
-* Frequently failed topics
+### 5. Career Knowledge Assistant (Document RAG)
+* **Study RAG Chatbot**: Upload prep notes, PDFs, or slides. Students can query complex concepts and get verified replies citing their files.
+* **Auto-Summarizer**: Generates single-page summaries and flashcards from large documents.
+* **Quiz Generator**: Builds auto-generated testing modules to evaluate conceptual understanding.
 
 ---
 
-# 5. AI PDF Chatbot
+## 🚀 Local Installation & Setup
 
-This becomes:
-
-# "Career Knowledge Assistant"
-
-## Features
-
-Students upload:
-
-* Notes
-* PDFs
-* Research papers
-* Placement materials
-* Interview prep PDFs
-
-Then AI can:
-
-* Answer questions
-* Summarize content
-* Generate quizzes
-* Create flashcards
-* Explain concepts
+### Prerequisites
+* Java JDK 17+
+* Python 3.10+
+* MySQL Server (running on port 3306)
+* Node.js (v18+)
 
 ---
 
-# HOW THIS SHOULD WORK
-
-## RAG Architecture
-
-```text
-PDF Upload
-    ↓
-Text Extraction
-    ↓
-Chunking
-    ↓
-Embeddings
-    ↓
-Vector Database
-    ↓
-LLM Retrieval
-```
+### Step 1: Clone and Database Setup
+1. Clone the repository.
+2. In MySQL, create a database named `careeros`:
+   ```sql
+   CREATE DATABASE careeros;
+   ```
+3. The database schema, initial admin user, and sample placement data will seed automatically on backend startup using `schema.sql`.
 
 ---
 
-# 6. CS Notes + Learning Module
-
-This becomes:
-
-# "Prep Hub"
-
-## Features
-
-### Structured Learning
-
-Topics:
-
-* DSA
-* DBMS
-* OS
-* CN
-* OOP
-* System Design
-
-### AI Integration
-
-AI can:
-
-* Explain topics
-* Generate quizzes
-* Generate interview questions
-* Recommend next topics
-
-### Track Progress
-
-```text
-Completed Topics
-Weak Topics
-Interview Readiness
-Study Streaks
-```
+### Step 2: Configure and Run Python AI Services
+1. Navigate to the `ai-services` folder:
+   ```bash
+   cd ai-services
+   ```
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate  # On macOS/Linux: source venv/bin/activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Create a `.env` file in the `ai-services` directory:
+   ```env
+   OPENROUTER_API_KEY=your_openrouter_api_key_here
+   OPENROUTER_MODEL=google/gemma-4-31b-it:free
+   CHROMA_DB_DIR=./chroma_db
+   UPLOAD_DIR=./uploads
+   ALLOWED_ORIGINS=["http://localhost:5173"]
+   ```
+5. Start the FastAPI server on port `8000`:
+   ```bash
+   python -m uvicorn app.main:app --port 8000 --host 0.0.0.0
+   ```
 
 ---
 
-# 7. AlgoMentor Agentic DSA Planner
-
-This becomes:
-
-# "AI Career Mentor"
-
-This is honestly your strongest differentiator.
-
-Most student portals are just CRUD apps wearing a fake mustache.
-
-This module makes your project intelligent.
-
----
-
-# FEATURES
-
-## Personalized DSA Roadmaps
-
-User enters:
-
-* Current skill level
-* Target company
-* Time available
-* Placement timeline
-
-AI generates:
-
-* Daily roadmap
-* Weekly goals
-* Problem recommendations
-* Revision plans
+### Step 3: Configure and Run Spring Boot Gateway
+1. Navigate to the `backend` folder:
+   ```bash
+   cd backend
+   ```
+2. Open `src/main/resources/application.properties` and configure your database credentials, OpenRouter key, and RapidAPI credentials:
+   ```properties
+   spring.datasource.url=jdbc:mysql://localhost:3306/careeros
+   spring.datasource.username=your_mysql_username
+   spring.datasource.password=your_mysql_password
+   
+   openrouter.api.key=your_openrouter_key
+   jsearch.api.key=your_rapidapi_jsearch_key
+   ```
+3. Compile and launch the Spring Boot application using Maven:
+   ```bash
+   mvn compile
+   mvn spring-boot:run
+   ```
+   The gateway backend will start on port `9999`.
 
 ---
 
-# Agentic Workflow
-
-## Example
-
-```text
-Student weak in Graphs
-      ↓
-AI detects low mock interview score
-      ↓
-AI updates roadmap
-      ↓
-Recommends graph problems
-      ↓
-Schedules revision
-      ↓
-Tracks completion
-```
-
-Now the system becomes adaptive.
-
-That is HUGE.
-
----
-
-# MASTER SYSTEM ARCHITECTURE
-
-# Recommended Tech Stack
-
-## Frontend
-
-### Option 1 (Best)
-
-```text
-React + TypeScript + Tailwind
-```
-
-### Features
-
-* Modular components
-* Fast UI
-* Dashboard-friendly
-* Reusable architecture
-
----
-
-# Backend
-
-## Recommended
-
-```text
-Spring Boot
-```
-
-Why?
-
-* Enterprise-level
-* Placement systems suit Java backend well
-* Strong authentication support
-* Easy microservice transition later
-
-Alternative:
-
-* Node.js + Express
-
-But since you are learning Java:
-
-Spring Boot = stronger portfolio value.
-
----
-
-# AI Services Layer
-
-Separate AI microservice.
-
-## Use Python FastAPI
-
-Why?
-
-* AI ecosystem strongest in Python
-* LangChain support
-* Vector DB support
-* ML libraries
-
----
-
-# Suggested Architecture
-
-```text
-Frontend (React)
-        ↓
-API Gateway
-        ↓
---------------------------------
-| Placement Service            |
-| Resume Service               |
-| Interview Service            |
-| AI Mentor Service            |
-| PDF Chat Service             |
---------------------------------
-        ↓
-Databases + Vector DB
-```
-
----
-
-# DATABASE DESIGN
-
-## PostgreSQL
-
-Store:
-
-* Users
-* Jobs
-* Interviews
-* Applications
-* Scores
-* Resume metadata
-
----
-
-# Vector Database
-
-Use:
-
-## Pinecone / ChromaDB / Weaviate
-
-Store:
-
-* PDF embeddings
-* Resume embeddings
-* Job description embeddings
-* Notes embeddings
-
----
-
-# AUTHENTICATION
-
-Use:
-
-```text
-JWT Authentication
-OAuth2
-Google Login
-```
-
-Roles:
-
-* STUDENT
-* ADMIN
-* RECRUITER
-
----
-
-# CLOUD ARCHITECTURE
-
-## Deployment Plan
-
-### Frontend
-
-Deploy on:
-
-* Vercel
-* Netlify
-
-### Backend
-
-Deploy on:
-
-* AWS EC2
-* Render
-* Railway
-
-### Database
-
-* PostgreSQL on AWS RDS
-
-### Storage
-
-* AWS S3
-
-### AI Models
-
-* OpenAI API
-* Gemini API
-* HuggingFace
-
----
-
-# RECOMMENDED FOLDER STRUCTURE
-
-```text
-AI-CareerOS/
-│
-├── frontend/
-│
-├── backend/
-│   ├── placement-service/
-│   ├── resume-service/
-│   ├── interview-service/
-│   ├── auth-service/
-│   └── mentor-service/
-│
-├── ai-services/
-│   ├── rag-engine/
-│   ├── interview-ai/
-│   ├── ats-engine/
-│   └── recommendation-engine/
-│
-├── docs/
-├── deployment/
-└── shared/
-```
-
----
-
-# RECOMMENDED PHASES
-
-# Phase 1
-
-Merge:
-
-* Placement system
-* Resume Builder
-* Resume Analyzer
-
-This already becomes a powerful project.
-
----
-
-# Phase 2
-
-Add:
-
-* AI Interview
-* DSA Planner
-
-Now platform becomes intelligent.
-
----
-
-# Phase 3
-
-Add:
-
-* PDF chatbot
-* RAG system
-* Learning assistant
-
-Now it becomes an ecosystem.
-
----
-
-# Phase 4
-
-Add advanced features:
-
-* Real-time notifications
-* AI voice interviews
-* Video interviews
-* Company analytics
-* Recommendation engine
-* Leaderboards
-* Coding contests
-
----
-
-# HIGH-VALUE FEATURES FOR RESUME
-
-These features will make recruiters stare at your GitHub like:
-
-"Wait... a student built this?"
-
-## Add These
-
-### 1. AI Recommendation Engine
-
-Recommend:
-
-* Jobs
-* Skills
-* Learning paths
-* Companies
-
----
-
-### 2. Real-Time Analytics Dashboard
-
-Charts:
-
-* Placement stats
-* Skill growth
-* Interview scores
-* Resume improvements
-
----
-
-### 3. Notification System
-
-Use:
-
-* WebSockets
-* Firebase
-* Kafka later
-
----
-
-### 4. AI Career Assistant Chatbot
-
-Unified chatbot that can:
-
-* Answer placement questions
-* Explain concepts
-* Review resumes
-* Suggest preparation plans
-
-Basically your own mini career GPT.
-
----
-
-# BEST PROJECT TITLE IDEAS
-
-## Professional
-
-* AI Career Ecosystem
-* Smart CareerOS
-* IntelliPlacement AI
-* NextGen Placement Platform
-* CareerPilot AI
-
-## Fancy Startup Vibes
-
-* HireForge
-* PrepVerse
-* AscendAI
-* PathSync
-* Placify AI
-
----
-
-# WHAT RECRUITERS WILL SEE
-
-This project demonstrates:
-
-## Backend
-
-* Spring Boot
-* REST APIs
-* Authentication
-* Role-based access
-* Database design
-
-## Frontend
-
-* React
-* Dashboard systems
-* State management
-* Responsive UI
-
-## AI/ML
-
-* LLM integration
-* RAG architecture
-* NLP
-* Recommendation systems
-* Embeddings
-
-## Cloud
-
-* AWS
-* S3
-* EC2
-* Deployment
-
-## System Design
-
-* Modular architecture
-* Microservices
-* Scalable systems
-
-That combination is EXTREMELY strong for placements.
-
----
-
-# MOST IMPORTANT ADVICE
-
-Do NOT try to merge everything at once.
-
-That is how projects become:
-
-"folder_final_final_REAL_final_2"
-
-Start from ONE CORE.
-
-Your core should be:
-
-# Smart Placement Management System
-
-Then integrate modules one-by-one.
-
----
-
-# BEST IMPLEMENTATION ORDER
-
-## Step 1
-
-Create unified authentication.
-
----
-
-## Step 2
-
-Merge Resume Builder.
-
----
-
-## Step 3
-
-Merge Resume Analyzer.
-
----
-
-## Step 4
-
-Add AI Interview.
-
----
-
-## Step 5
-
-Add DSA Planner.
-
----
-
-## Step 6
-
-Add PDF Chatbot.
-
----
-
-# FINAL RESULT
-
-You will end up with:
-
-A fully integrated AI-powered placement and career preparation ecosystem.
-
-Not just another CRUD project.
-
-This can genuinely become:
-
-* Final year major project
-* Internship showcase
-* Startup prototype
-* Open-source flagship project
-* Strong resume centerpiece
-
-And honestly?
-
-The combination of:
-
-* AI
-* Placement automation
-* Resume intelligence
-* Interview systems
-* Personalized learning
-
-…is very aligned with current industry trends.
-
-You are accidentally building something that companies are actually investing money into.
-
-Which is exactly the kind of chaos we like.
+### Step 4: Run the React Frontend
+1. Navigate to the `frontend` folder:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+4. Access the web dashboard at `http://localhost:5173`.
