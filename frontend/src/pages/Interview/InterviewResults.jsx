@@ -122,7 +122,7 @@ export function InterviewResults() {
             Performance Breakdown
           </h3>
           <div className="w-full h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={300} minWidth={0}>
               <RadarChart data={performanceData}>
                 <PolarGrid stroke="#ffffff20" />
                 <PolarAngleAxis dataKey="metric" stroke="#9ca3af" />
@@ -137,7 +137,7 @@ export function InterviewResults() {
         <div className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">Question Quality</h3>
           <div className="w-full h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={300} minWidth={0}>
               <BarChart data={answerQuality}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
                 <XAxis dataKey="question" stroke="#9ca3af" />

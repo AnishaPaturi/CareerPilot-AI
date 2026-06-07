@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useInterview } from '../../context/InterviewContext';
-import { Mic, MicOff, Video as VideoIcon, VideoOff, X, AlertTriangle, Send, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Video as VideoIcon, VideoOff, X, AlertTriangle, Send, Loader2, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiInterviewAPI } from '../../services/api';
 
@@ -15,6 +15,7 @@ export function InterviewRoom() {
   
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCameraOn, setIsCameraOn] = useState(true);
+  const [isTtsEnabled, setIsTtsEnabled] = useState(true);
   const [timer, setTimer] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [isAiThinking, setIsAiThinking] = useState(false);
@@ -46,6 +47,45 @@ export function InterviewRoom() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Text to Speech for current question
+  useEffect(() => {
+    if (isTtsEnabled && questions.length > 0 && questions[currentQuestionIndex]) {
+      const questionText = questions[currentQuestionIndex].question;
+      
+      const speak = () => {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(questionText);
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          
+          const voices = window.speechSynthesis.getVoices();
+          const englishVoice = voices.find(voice => voice.lang.includes('en-US') && voice.name.includes('Google')) ||
+                               voices.find(voice => voice.lang.startsWith('en'));
+          if (englishVoice) {
+            utterance.voice = englishVoice;
+          }
+          
+          window.speechSynthesis.speak(utterance);
+        }
+      };
+      
+      if ('speechSynthesis' in window) {
+        if (window.speechSynthesis.getVoices().length === 0) {
+          window.speechSynthesis.onvoiceschanged = speak;
+        } else {
+          speak();
+        }
+      }
+    }
+    
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [currentQuestionIndex, questions, isTtsEnabled]);
 
   // Tab visibility/proctoring detection
   useEffect(() => {
@@ -312,14 +352,23 @@ export function InterviewRoom() {
               <button
                 onClick={() => setIsMicOn(!isMicOn)}
                 className={`p-2 rounded-lg transition-all ${isMicOn ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30'}`}
+                title="Toggle Mic"
               >
                 {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
               </button>
               <button
                 onClick={() => setIsCameraOn(!isCameraOn)}
                 className={`p-2 rounded-lg transition-all ${isCameraOn ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30'}`}
+                title="Toggle Camera"
               >
                 {isCameraOn ? <VideoIcon className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+              </button>
+              <button
+                onClick={() => setIsTtsEnabled(!isTtsEnabled)}
+                className={`p-2 rounded-lg transition-all ${isTtsEnabled ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30'}`}
+                title={isTtsEnabled ? "Mute question audio" : "Unmute question audio"}
+              >
+                {isTtsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
               </button>
             </div>
             

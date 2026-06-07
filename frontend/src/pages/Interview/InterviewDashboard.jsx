@@ -119,7 +119,7 @@ export function InterviewDashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6 shadow-lg">
           <h3 className="text-lg font-semibold text-white mb-4">Interview Performance</h3>
           <div className="w-full h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={250} minWidth={0}>
               <AreaChart data={performanceData}>
                 <defs>
                   <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
@@ -143,7 +143,7 @@ export function InterviewDashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6 shadow-lg">
           <h3 className="text-lg font-semibold text-white mb-4">Points Progression</h3>
           <div className="w-full h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={250} minWidth={0}>
               <LineChart data={pointsData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
                 <XAxis dataKey="date" stroke="#9ca3af" />
@@ -164,7 +164,7 @@ export function InterviewDashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6 shadow-lg">
           <h3 className="text-lg font-semibold text-white mb-4">Topic Mastery</h3>
           <div className="w-full h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={250} minWidth={0}>
               <RadarChart data={topicMasteryData}>
                 <PolarGrid stroke="#ffffff20" />
                 <PolarAngleAxis dataKey="topic" stroke="#9ca3af" />
