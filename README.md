@@ -198,7 +198,7 @@ The relational database is managed by MySQL. The system initializes automaticall
 
 * **Author Name**: Anisha Paturi
 * **Role**: Primary System Architect & Full-Stack AI Developer
-* **Affiliation**: College Major Capstone Project
+
 
 Anisha Paturi is a computer science undergraduate passionate about full-stack engineering, cloud services, and AI agent integration. CareerPilot-AI represents the capstone major project to unify placement coordination and intelligent candidate preparation.
 
