@@ -112,6 +112,33 @@ The relational database is managed by MySQL. The system initializes automaticall
 * Python 3.10+
 * MySQL Server (running on port 3306)
 * Node.js (v18+)
+* **Docker Desktop** (required to run Redis, RabbitMQ, Elasticsearch, and the monitoring stack)
+
+---
+
+### Step 1.2: Spin Up Infrastructure Services (Docker)
+The project utilizes containerized infrastructure services for caching, task queuing, search indexing, and monitoring.
+
+1. Ensure **Docker Desktop** is running.
+2. Navigate to the Docker deployment folder:
+   ```bash
+   cd deployment/docker
+   ```
+3. Run the following command to download and start all containers in the background:
+   ```bash
+   docker compose up -d
+   ```
+
+#### Infrastructure Services & Login Details
+
+| Service | Local URL | Port | Default Credentials | Purpose in AI-CareerOS |
+| :--- | :--- | :--- | :--- | :--- |
+| **RabbitMQ Console** | [http://localhost:15672](http://localhost:15672) | `5672`, `15672` | Username: `guest`<br>Password: `guest` | Message broker for asynchronous AI resume parsing and mock evaluation queues. |
+| **Grafana Dashboards** | [http://localhost:3000](http://localhost:3000) | `3000` | Username: `admin`<br>Password: `admin` | Visualizes service metrics and log streams. |
+| **Prometheus** | [http://localhost:9090](http://localhost:9090) | `9090` | *None* | Scrapes application JVM and HTTP metrics from Actuator. |
+| **Elasticsearch** | [http://localhost:9200](http://localhost:9200) | `9200` | *None (Security Disabled)* | Full-text candidate/resume and job board indexing. |
+| **Redis Server** | *Internal* | `6379` | *None* | Session caching and API response caching for LLM endpoints. |
+| **Loki Log Engine** | [http://localhost:3100](http://localhost:3100) | `3100` | *None* | Aggregates application log stdout streams. |
 
 ---
 
