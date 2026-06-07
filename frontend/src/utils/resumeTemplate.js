@@ -1,3 +1,5 @@
+import { atsAPI } from "../services/api";
+
 export const parseResumeTextToHTML = (text) => {
   if (!text) return "";
   
@@ -357,17 +359,23 @@ export const parseResumeTextToHTML = (text) => {
 </html>`;
 };
 
-export const downloadResume = (improvedText, mode) => {
+export const downloadResume = async (improvedText, mode) => {
   if (!improvedText) {
     alert("No resume text available to download.");
     return;
   }
-  const htmlContent = parseResumeTextToHTML(improvedText);
-  const blob = new Blob([htmlContent], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = mode === "scratch" ? "new_resume.html" : "improved_resume.html";
-  a.click();
-  URL.revokeObjectURL(url);
+  try {
+    const data = await atsAPI.convertDocx(improvedText, mode);
+    if (data.word_base64) {
+      const link = document.createElement("a");
+      link.href = `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${data.word_base64}`;
+      link.download = mode === "scratch" ? "new_resume.docx" : "improved_resume.docx";
+      link.click();
+    } else if (data.error) {
+      alert(data.error);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Failed to export Word document: " + err.message);
+  }
 };

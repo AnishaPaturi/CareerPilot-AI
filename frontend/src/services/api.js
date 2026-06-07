@@ -250,5 +250,14 @@ export const atsAPI = {
     });
     if (!res.ok) throw new Error('Failed to chat with resume');
     return res.json();
+  },
+  convertDocx: async (text, mode = "improve") => {
+    const res = await fetch(`${BASE_URL}/api/ai/ats/convert-docx`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, mode })
+    });
+    if (!res.ok) throw new Error('Failed to convert resume to Word document');
+    return res.json();
   }
 };

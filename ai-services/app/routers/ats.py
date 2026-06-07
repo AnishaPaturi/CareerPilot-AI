@@ -393,3 +393,259 @@ async def chat_resume(request: ChatResumeRequest):
         status_code=500,
         detail=f"Chat failed. All models failed. Last error: {str(last_error)}"
     )
+
+class DocxConversionRequest(BaseModel):
+    text: str
+    mode: str = "improve"
+
+@router.post("/convert-docx")
+async def convert_resume_to_docx(request: DocxConversionRequest):
+    try:
+        import io
+        import base64
+        import re
+        from docx import Document
+        from docx.shared import Inches, Pt, RGBColor
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
+        
+        def add_p_border_bottom(paragraph, color_hex="3b82f6", size="12"):
+            pPr = paragraph._p.get_or_add_pPr()
+            pBdr = pPr.find(qn('w:pBdr'))
+            if pBdr is None:
+                pBdr = OxmlElement('w:pBdr')
+                pPr.append(pBdr)
+            bottom = OxmlElement('w:bottom')
+            bottom.set(qn('w:val'), 'single')
+            bottom.set(qn('w:sz'), size)
+            bottom.set(qn('w:space'), '4')
+            bottom.set(qn('w:color'), color_hex)
+            pBdr.append(bottom)
+            
+        doc = Document()
+        for s in doc.sections:
+            s.top_margin = Inches(0.75)
+            s.bottom_margin = Inches(0.75)
+            s.left_margin = Inches(0.75)
+            s.right_margin = Inches(0.75)
+            
+        style = doc.styles['Normal']
+        font = style.font
+        font.name = 'Arial'
+        font.size = Pt(10.5)
+        font.color.rgb = RGBColor(0x33, 0x41, 0x55)
+        
+        lines = [line.strip() for line in request.text.split('\n')]
+        
+        email_regex = re.compile(r'([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})')
+        phone_regex = re.compile(r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}')
+        linkedin_regex = re.compile(r'(linkedin\.com/in/[a-zA-Z0-9_-]+)', re.IGNORECASE)
+        github_regex = re.compile(r'(github\.com/[a-zA-Z0-9_-]+)', re.IGNORECASE)
+        
+        name = ""
+        email = ""
+        phone = ""
+        linkedin = ""
+        github = ""
+        
+        content_lines = []
+        first_non_empty = ""
+        for line in lines:
+            if not line:
+                continue
+            
+            email_match = email_regex.search(line)
+            if email_match and not email:
+                email = email_match.group(1)
+                
+            phone_match = phone_regex.search(line)
+            if phone_match and not phone:
+                phone = phone_match.group(0)
+                
+            linkedin_match = linkedin_regex.search(line)
+            if linkedin_match and not linkedin:
+                linkedin = linkedin_match.group(1)
+                
+            github_match = github_regex.search(line)
+            if github_match and not github:
+                github = github_match.group(1)
+                
+            is_contact = (
+                '@' in line or
+                'linkedin.com' in line.lower() or
+                'github.com' in line.lower() or
+                (phone and phone in line) or
+                (line == '|')
+            )
+            if is_contact:
+                continue
+                
+            if not first_non_empty and not line.startswith('#'):
+                first_non_empty = line
+                
+            content_lines.append(line)
+            
+        first_line = next((l for l in lines if l), "")
+        if first_line.startswith('#'):
+            name = first_line.lstrip('#').strip()
+        elif first_non_empty and len(first_non_empty) < 40 and ':' not in first_non_empty:
+            name = first_non_empty
+            if first_non_empty in content_lines:
+                content_lines.remove(first_non_empty)
+        else:
+            name = "Resume"
+            
+        title_p = doc.add_paragraph()
+        title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        title_run = title_p.add_run(name)
+        title_run.font.name = 'Arial'
+        title_run.font.size = Pt(22)
+        title_run.font.bold = True
+        title_run.font.color.rgb = RGBColor(0x0f, 0x17, 0x2a)
+        
+        contact_parts = []
+        if email:
+            contact_parts.append(email)
+        if phone:
+            contact_parts.append(phone)
+        if linkedin:
+            contact_parts.append(linkedin)
+        if github:
+            contact_parts.append(github)
+            
+        if contact_parts:
+            contact_p = doc.add_paragraph()
+            contact_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            contact_p.paragraph_format.space_before = Pt(2)
+            contact_p.paragraph_format.space_after = Pt(12)
+            
+            contact_text = "  |  ".join(contact_parts)
+            run = contact_p.add_run(contact_text)
+            run.font.size = Pt(9.5)
+            run.font.color.rgb = RGBColor(0x47, 0x55, 0x69)
+            add_p_border_bottom(contact_p, color_hex="3b82f6", size="12")
+            
+        sections_list = []
+        current_sec = None
+        
+        def is_header(l):
+            if l.startswith('#'):
+                return True
+            upper = l.upper()
+            common = [
+                "SUMMARY", "PROFESSIONAL SUMMARY", "EXPERIENCE", "WORK EXPERIENCE",
+                "EDUCATION", "SKILLS", "TECHNICAL SKILLS", "PROJECTS", "CERTIFICATIONS",
+                "ORGANIZATIONS", "LANGUAGES", "COURSES", "INTERNSHIPS", "SUMMARY OF QUALIFICATIONS"
+            ]
+            if upper in common:
+                return True
+            if len(l) > 2 and len(l) < 35 and upper == l and '|' not in l and '*' not in l and ':' not in l and '-' not in l:
+                return True
+            return False
+
+        for line in content_lines:
+            if is_header(line):
+                if current_sec:
+                    sections_list.append(current_sec)
+                current_sec = {
+                    "title": line.lstrip('#').strip("-: "),
+                    "items": []
+                }
+            else:
+                if not current_sec:
+                    current_sec = {"title": "Profile", "items": []}
+                current_sec["items"].append(line)
+                
+        if current_sec:
+            sections_list.append(current_sec)
+            
+        for sec in sections_list:
+            if not sec["items"]:
+                continue
+                
+            head_p = doc.add_paragraph()
+            head_p.paragraph_format.space_before = Pt(14)
+            head_p.paragraph_format.space_after = Pt(6)
+            head_p.paragraph_format.keep_with_next = True
+            
+            run = head_p.add_run(sec["title"].upper())
+            run.font.name = 'Arial'
+            run.font.size = Pt(12)
+            run.font.bold = True
+            run.font.color.rgb = RGBColor(0x0f, 0x17, 0x2a)
+            
+            add_p_border_bottom(head_p, color_hex="cbd5e1", size="6")
+            
+            for item in sec["items"]:
+                is_bullet = item.startswith('-') or item.startswith('*') or item.startswith('•') or item.startswith('+')
+                item_clean = re.sub(r'^[\-\*\•\+]\s*', '', item)
+                
+                parts = re.split(r'(\*\*.*?\*\*)', item_clean)
+                
+                if is_bullet:
+                    p = doc.add_paragraph(style='List Bullet')
+                    p.paragraph_format.space_after = Pt(3)
+                    p.paragraph_format.line_spacing = 1.15
+                else:
+                    p = doc.add_paragraph()
+                    p.paragraph_format.space_after = Pt(6)
+                    p.paragraph_format.line_spacing = 1.15
+                    
+                    if '|' in item or '  ' in item or (' - ' in item and len(item) < 100):
+                        header_parts = [hp.strip() for hp in re.split(r'[|]|\s{2,}', item) if hp.strip()]
+                        if len(header_parts) >= 2:
+                            p.paragraph_format.space_before = Pt(6)
+                            p.paragraph_format.space_after = Pt(2)
+                            
+                            table = doc.add_table(rows=1, cols=2)
+                            table.autofit = False
+                            table.allow_autofit = False
+                            table.columns[0].width = Inches(5.0)
+                            table.columns[1].width = Inches(2.0)
+                            
+                            row = table.rows[0]
+                            
+                            left_cell_p = row.cells[0].paragraphs[0]
+                            left_cell_p.paragraph_format.space_after = Pt(0)
+                            
+                            run_title = left_cell_p.add_run(header_parts[0])
+                            run_title.font.bold = True
+                            run_title.font.color.rgb = RGBColor(0x0f, 0x17, 0x2a)
+                            
+                            if len(header_parts) > 2:
+                                left_cell_p.add_run("  •  ")
+                                run_sub = left_cell_p.add_run(", ".join(header_parts[1:-1]))
+                                run_sub.font.italic = True
+                                run_sub.font.color.rgb = RGBColor(0x47, 0x55, 0x69)
+                            
+                            right_cell_p = row.cells[1].paragraphs[0]
+                            right_cell_p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                            right_cell_p.paragraph_format.space_after = Pt(0)
+                            
+                            run_date = right_cell_p.add_run(header_parts[-1])
+                            run_date.font.bold = True
+                            run_date.font.color.rgb = RGBColor(0x64, 0x74, 0x8b)
+                            
+                            pPr = p._element.getparent()
+                            if pPr is not None:
+                                pPr.remove(p._element)
+                            continue
+                            
+                for part in parts:
+                    if part.startswith('**') and part.endswith('**'):
+                        clean_part = part[2:-2]
+                        r = p.add_run(clean_part)
+                        r.font.bold = True
+                    else:
+                        r = p.add_run(part)
+                        
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        docx_bytes = buffer.getvalue()
+        
+        return {"word_base64": base64.b64encode(docx_bytes).decode()}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to generate Word document: {str(e)}")
