@@ -93,7 +93,7 @@ async def generate_interview_questions(request: InterviewRequest):
     """)
     
     models = []
-    for m in [settings.OPENROUTER_MODEL, "moonshotai/kimi-k2.6:free", "z-ai/glm-4.5-air:free", "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+    for m in [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "poolside/laguna-m.1:free", "liquid/lfm-2.5-1.2b-thinking:free", "moonshotai/kimi-k2.6:free", "z-ai/glm-4.5-air:free", "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
         if m and m not in models:
             models.append(m)
 
@@ -148,7 +148,7 @@ async def evaluate_interview_answer(submission: AnswerSubmission):
     """)
     
     models = []
-    for m in [settings.OPENROUTER_MODEL, "moonshotai/kimi-k2.6:free", "z-ai/glm-4.5-air:free", "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+    for m in [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "poolside/laguna-m.1:free", "liquid/lfm-2.5-1.2b-thinking:free", "moonshotai/kimi-k2.6:free", "z-ai/glm-4.5-air:free", "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
         if m and m not in models:
             models.append(m)
 

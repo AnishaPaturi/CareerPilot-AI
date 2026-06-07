@@ -139,13 +139,6 @@ def sanitize_job_match(result: dict) -> dict:
 
 @router.post("/analyze", response_model=ResumeAnalysis)
 async def analyze_resume(file: UploadFile = File(...)):
-    llm = ChatOpenAI(
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        base_url="https://openrouter.ai/api/v1",
-        model=settings.OPENROUTER_MODEL,
-        temperature=0.3
-    )
-    
     contents = await file.read()
     
     # Use a secure, cross-platform temporary file
@@ -181,33 +174,45 @@ async def analyze_resume(file: UploadFile = File(...)):
     Focus on: keywords, formatting, action verbs, quantifiable achievements
     """)
     
-    try:
-        chain = prompt | llm | parser
-        result = chain.invoke({"resume_text": resume_text[:3000]})
-        
-        # Sanitize result to match Pydantic schema types and structure
-        sanitized = sanitize_analysis_result(result)
-        sanitized["extracted_text"] = resume_text
-        return ResumeAnalysis(**sanitized)
-    except Exception as e:
-        import traceback
-        import sys
-        print("ERROR during resume analysis:", file=sys.stderr)
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Resume analysis failed. Error: {str(e)}"
-        )
+    models = []
+    for m in [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "poolside/laguna-m.1:free", "liquid/lfm-2.5-1.2b-thinking:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+        if m and m not in models:
+            models.append(m)
+            
+    last_error = None
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.3,
+                max_retries=1
+            )
+            chain = prompt | llm | parser
+            result = chain.invoke({"resume_text": resume_text[:3000]})
+            
+            # Sanitize result to match Pydantic schema types and structure
+            sanitized = sanitize_analysis_result(result)
+            sanitized["extracted_text"] = resume_text
+            return ResumeAnalysis(**sanitized)
+        except Exception as e:
+            last_error = e
+            import sys
+            print(f"Failed resume analysis using model {model}: {e}", file=sys.stderr)
+            continue
+            
+    import traceback
+    import sys
+    print("ERROR during resume analysis (all models failed):", file=sys.stderr)
+    traceback.print_exc()
+    raise HTTPException(
+        status_code=500,
+        detail=f"Resume analysis failed. All models failed. Last error: {str(last_error)}"
+    )
 
 @router.post("/match-job", response_model=JobMatchResponse)
 async def match_resume_to_job(request: JobMatchRequest):
-    llm = ChatOpenAI(
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        base_url="https://openrouter.ai/api/v1",
-        model=settings.OPENROUTER_MODEL,
-        temperature=0.3
-    )
-    
     prompt = ChatPromptTemplate.from_template("""
     Compare resume against job description and calculate match:
     
@@ -217,22 +222,41 @@ async def match_resume_to_job(request: JobMatchRequest):
     Return JSON: {{match_percentage, matched_skills, missing_skills, suggestions}}
     """)
     
-    try:
-        chain = prompt | llm | JsonOutputParser()
-        result = chain.invoke(request.dict())
-        
-        # Sanitize result to match Pydantic schema types and structure
-        sanitized = sanitize_job_match(result)
-        return JobMatchResponse(**sanitized)
-    except Exception as e:
-        import traceback
-        import sys
-        print("ERROR during resume matching:", file=sys.stderr)
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Resume matching failed. Error: {str(e)}"
-        )
+    models = []
+    for m in [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "poolside/laguna-m.1:free", "liquid/lfm-2.5-1.2b-thinking:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+        if m and m not in models:
+            models.append(m)
+            
+    last_error = None
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.3,
+                max_retries=1
+            )
+            chain = prompt | llm | JsonOutputParser()
+            result = chain.invoke(request.dict())
+            
+            # Sanitize result to match Pydantic schema types and structure
+            sanitized = sanitize_job_match(result)
+            return JobMatchResponse(**sanitized)
+        except Exception as e:
+            last_error = e
+            import sys
+            print(f"Failed resume matching using model {model}: {e}", file=sys.stderr)
+            continue
+            
+    import traceback
+    import sys
+    print("ERROR during resume matching (all models failed):", file=sys.stderr)
+    traceback.print_exc()
+    raise HTTPException(
+        status_code=500,
+        detail=f"Resume matching failed. All models failed. Last error: {str(last_error)}"
+    )
 
 class RewriteRequest(BaseModel):
     section: Optional[str] = ""
@@ -246,91 +270,89 @@ class ChatResumeRequest(BaseModel):
 
 @router.post("/rewrite")
 async def rewrite_resume_section(request: RewriteRequest):
-    llm = ChatOpenAI(
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        base_url="https://openrouter.ai/api/v1",
-        model=settings.OPENROUTER_MODEL,
-        temperature=0.7
+    models = []
+    for m in [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "poolside/laguna-m.1:free", "liquid/lfm-2.5-1.2b-thinking:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+        if m and m not in models:
+            models.append(m)
+            
+    last_error = None
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.7,
+                max_retries=1
+            )
+            
+            if request.mode == "scratch":
+                system_prompt = (
+                    "You are an expert resume writer. Generate a comprehensive, professional, and ATS-friendly resume from scratch.\n\n"
+                    "Job Description (Target Role):\n"
+                    "{job_description}\n\n"
+                    "Guidelines:\n"
+                    "1. Tailor the resume specifically to the job description provided above, highlighting relevant skills and keywords.\n"
+                    "2. Structure it with clear sections: Contact Info, Professional Summary, Work Experience (with bullet points using action verbs and placeholders for metrics like '[X]%'), Education, and Skills.\n"
+                    "3. Use a clean, plain text markdown format."
+                )
+                prompt = ChatPromptTemplate.from_messages([
+                    ("system", system_prompt),
+                    ("human", "Generate a new resume based on the target job description.")
+                ])
+                chain = prompt | llm | StrOutputParser()
+                result = chain.invoke({"job_description": request.job_description or "General Professional Resume Outline"})
+            else:
+                # mode == "improve"
+                system_prompt = (
+                    "You are an expert resume rewriter. Rewrite the following resume section to make it highly impactful, professional, and ATS-friendly.\n\n"
+                    "Original Section:\n"
+                    "{section}\n\n"
+                )
+                if request.job_description:
+                    system_prompt += (
+                        "Job Description (Target Role):\n"
+                        "{job_description}\n\n"
+                        "Strict Instructions:\n"
+                        "Align the rewritten text specifically to match the requirements, skills, and key phrases found in the job description.\n\n"
+                    )
+                system_prompt += (
+                    "Guidelines:\n"
+                    "1. Improve action verbs, sentence structure, and make bullet points punchy.\n"
+                    "2. Whenever possible, structure sentences to show achievement and impact (e.g. Accomplished [X] as measured by [Y] by doing [Z]).\n"
+                    "3. Retain the core factual details from the original section but present them with maximum impact."
+                )
+                prompt = ChatPromptTemplate.from_messages([
+                    ("system", system_prompt),
+                    ("human", "Rewrite the resume section in a {style} style.")
+                ])
+                chain = prompt | llm | StrOutputParser()
+                result = chain.invoke({
+                    "section": request.section,
+                    "style": request.style,
+                    "job_description": request.job_description or ""
+                })
+                
+            return {"rewritten": result}
+        except Exception as e:
+            last_error = e
+            import sys
+            print(f"Failed resume rewrite using model {model}: {e}", file=sys.stderr)
+            continue
+            
+    import traceback
+    import sys
+    print("ERROR during resume rewriting (all models failed):", file=sys.stderr)
+    traceback.print_exc()
+    raise HTTPException(
+        status_code=500,
+        detail=f"Rewrite failed. All models failed. Last error: {str(last_error)}"
     )
-    
-    if request.mode == "scratch":
-        system_prompt = (
-            "You are an expert resume writer. Generate a comprehensive, professional, and ATS-friendly resume from scratch.\n\n"
-            "Job Description (Target Role):\n"
-            "{job_description}\n\n"
-            "Guidelines:\n"
-            "1. Tailor the resume specifically to the job description provided above, highlighting relevant skills and keywords.\n"
-            "2. Structure it with clear sections: Contact Info, Professional Summary, Work Experience (with bullet points using action verbs and placeholders for metrics like '[X]%'), Education, and Skills.\n"
-            "3. Use a clean, plain text markdown format."
-        )
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            ("human", "Generate a new resume based on the target job description.")
-        ])
-        chain = prompt | llm | StrOutputParser()
-        try:
-            result = chain.invoke({"job_description": request.job_description or "General Professional Resume Outline"})
-        except Exception as e:
-            import traceback
-            import sys
-            print("ERROR during resume rewriting (scratch):", file=sys.stderr)
-            traceback.print_exc()
-            raise HTTPException(
-                status_code=500,
-                detail=f"Rewrite failed. Error: {str(e)}"
-            )
-    else:
-        # mode == "improve"
-        system_prompt = (
-            "You are an expert resume rewriter. Rewrite the following resume section to make it highly impactful, professional, and ATS-friendly.\n\n"
-            "Original Section:\n"
-            "{section}\n\n"
-        )
-        if request.job_description:
-            system_prompt += (
-                "Job Description (Target Role):\n"
-                "{job_description}\n\n"
-                "Strict Instructions:\n"
-                "Align the rewritten text specifically to match the requirements, skills, and key phrases found in the job description.\n\n"
-            )
-        system_prompt += (
-            "Guidelines:\n"
-            "1. Improve action verbs, sentence structure, and make bullet points punchy.\n"
-            "2. Whenever possible, structure sentences to show achievement and impact (e.g. Accomplished [X] as measured by [Y] by doing [Z]).\n"
-            "3. Retain the core factual details from the original section but present them with maximum impact."
-        )
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            ("human", "Rewrite the resume section in a {style} style.")
-        ])
-        chain = prompt | llm | StrOutputParser()
-        try:
-            result = chain.invoke({
-                "section": request.section,
-                "style": request.style,
-                "job_description": request.job_description or ""
-            })
-        except Exception as e:
-            import traceback
-            import sys
-            print("ERROR during resume rewriting (improve):", file=sys.stderr)
-            traceback.print_exc()
-            raise HTTPException(
-                status_code=500,
-                detail=f"Rewrite failed. Error: {str(e)}"
-            )
         
     return {"rewritten": result}
 
 @router.post("/chat")
 async def chat_resume(request: ChatResumeRequest):
-    llm = ChatOpenAI(
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        base_url="https://openrouter.ai/api/v1",
-        model=settings.OPENROUTER_MODEL,
-        temperature=0.3
-    )
-    
     prompt = ChatPromptTemplate.from_template("""
     You are an AI Resume Assistant. Help the user improve their resume.
     
@@ -339,17 +361,35 @@ async def chat_resume(request: ChatResumeRequest):
     User Question: {question}
     """)
     
-    chain = prompt | llm | StrOutputParser()
-    try:
-        result = chain.invoke({"resume_text": request.resume_text, "question": request.question})
-    except Exception as e:
-        import traceback
-        import sys
-        print("ERROR during resume chat:", file=sys.stderr)
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Chat failed. Error: {str(e)}"
-        )
-    
-    return {"answer": result}
+    models = []
+    for m in [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "poolside/laguna-m.1:free", "liquid/lfm-2.5-1.2b-thinking:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+        if m and m not in models:
+            models.append(m)
+            
+    last_error = None
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.3,
+                max_retries=1
+            )
+            chain = prompt | llm | StrOutputParser()
+            result = chain.invoke({"resume_text": request.resume_text, "question": request.question})
+            return {"answer": result}
+        except Exception as e:
+            last_error = e
+            import sys
+            print(f"Failed resume chat using model {model}: {e}", file=sys.stderr)
+            continue
+            
+    import traceback
+    import sys
+    print("ERROR during resume chat (all models failed):", file=sys.stderr)
+    traceback.print_exc()
+    raise HTTPException(
+        status_code=500,
+        detail=f"Chat failed. All models failed. Last error: {str(last_error)}"
+    )

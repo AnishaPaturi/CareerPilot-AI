@@ -175,13 +175,6 @@ async def chat_with_documents(request: ChatRequest, user_id: int = 1):
     if vector_store is None:
         raise HTTPException(status_code=400, detail="No documents uploaded yet")
     
-    llm = ChatOpenAI(
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-        base_url="https://openrouter.ai/api/v1",
-        model=settings.OPENROUTER_MODEL,
-        temperature=0.1
-    )
-    
     system_prompt = """You are a helpful AI assistant that answers questions about uploaded documents.
     Use the provided document context as the primary source.
     If the document lacks relevant info, use general knowledge while noting this.
@@ -198,27 +191,48 @@ async def chat_with_documents(request: ChatRequest, user_id: int = 1):
     def format_docs(docs):
         return "\n\n".join(doc.page_content for doc in docs)
     
-    rag_chain = (
-        {"context": retriever | format_docs, "input": RunnablePassthrough()}
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
-    
-    answer = rag_chain.invoke(request.query)
-    
-    # Store query history
-    query_entry = {
-        "id": len(QUERY_HISTORY_STORE.get(user_id, [])) + 1,
-        "query": request.query,
-        "answer": answer,
-        "timestamp": datetime.utcnow().isoformat()
-    }
-    if user_id not in QUERY_HISTORY_STORE:
-        QUERY_HISTORY_STORE[user_id] = []
-    QUERY_HISTORY_STORE[user_id].append(query_entry)
-    
-    return ChatResponse(answer=answer)
+    models = []
+    for m in [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "poolside/laguna-m.1:free", "liquid/lfm-2.5-1.2b-thinking:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+        if m and m not in models:
+            models.append(m)
+            
+    last_error = None
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.1,
+                max_retries=1
+            )
+            rag_chain = (
+                {"context": retriever | format_docs, "input": RunnablePassthrough()}
+                | prompt
+                | llm
+                | StrOutputParser()
+            )
+            answer = rag_chain.invoke(request.query)
+            
+            # Store query history
+            query_entry = {
+                "id": len(QUERY_HISTORY_STORE.get(user_id, [])) + 1,
+                "query": request.query,
+                "answer": answer,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            if user_id not in QUERY_HISTORY_STORE:
+                QUERY_HISTORY_STORE[user_id] = []
+            QUERY_HISTORY_STORE[user_id].append(query_entry)
+            
+            return ChatResponse(answer=answer)
+        except Exception as e:
+            last_error = e
+            import sys
+            print(f"Failed chat_with_documents using model {model}: {e}", file=sys.stderr)
+            continue
+            
+    raise HTTPException(status_code=500, detail=f"Chat failed. All models failed. Last error: {str(last_error)}")
 
 @router.get("/history")
 async def get_history(user_id: int = 1):
@@ -231,14 +245,6 @@ async def summarize_document(user_id: int = 1):
         
         if vector_store is None:
             raise HTTPException(status_code=400, detail="No documents uploaded")
-        
-        llm = ChatOpenAI(
-            api_key=os.getenv("OPENROUTER_API_KEY"),
-            base_url="https://openrouter.ai/api/v1",
-            model=settings.OPENROUTER_MODEL,
-            temperature=0.1,
-            max_tokens=4096
-        )
         
         # Retrieve all documents to reconstruct full context in correct reading order
         try:
@@ -295,8 +301,34 @@ async def summarize_document(user_id: int = 1):
             ("human", "Provide a detailed and highly accurate summary of the document(s) following the structural and grounding guidelines.")
         ])
         
-        summary = (prompt | llm | StrOutputParser()).invoke({"context": context})
-        return SummaryResponse(summary=summary)
+        models = []
+        for m in [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "poolside/laguna-m.1:free", "liquid/lfm-2.5-1.2b-thinking:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+            if m and m not in models:
+                models.append(m)
+                
+        last_error = None
+        for model in models:
+            try:
+                llm = ChatOpenAI(
+                    api_key=os.getenv("OPENROUTER_API_KEY"),
+                    base_url="https://openrouter.ai/api/v1",
+                    model=model,
+                    temperature=0.1,
+                    max_tokens=4096,
+                    max_retries=1
+                )
+                summary = (prompt | llm | StrOutputParser()).invoke({"context": context})
+                return SummaryResponse(summary=summary)
+            except Exception as e:
+                last_error = e
+                import sys
+                print(f"Failed summarize_document using model {model}: {e}", file=sys.stderr)
+                continue
+                
+        raise HTTPException(
+            status_code=500,
+            detail=f"Summarization failed. All models failed. Last error: {str(last_error)}"
+        )
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -348,13 +380,6 @@ async def generate_quiz(topic: str, user_id: int = 1, num_questions: int = 10):
         if vector_store is None:
             raise HTTPException(status_code=400, detail="No documents uploaded")
         
-        llm = ChatOpenAI(
-            api_key=os.getenv("OPENROUTER_API_KEY"),
-            base_url="https://openrouter.ai/api/v1",
-            model=settings.OPENROUTER_MODEL,
-            temperature=0.5
-        )
-        
         docs = vector_store.as_retriever(search_kwargs={"k": 20}).invoke(topic)
         context = "\n\n".join(doc.page_content for doc in docs)
         
@@ -365,13 +390,45 @@ async def generate_quiz(topic: str, user_id: int = 1, num_questions: int = 10):
         Format JSON array: [{{"question", "options":["A","B","C","D"], "correct", "explanation"}}]
         """)
         
-        result = (prompt | llm | StrOutputParser()).invoke({"topic": topic, "num_questions": num_questions, "context": context})
-        
-        try:
-            parsed = json.loads(result)
-            return parsed
-        except:
-            return []
+        models = []
+        for m in [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "poolside/laguna-m.1:free", "liquid/lfm-2.5-1.2b-thinking:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+            if m and m not in models:
+                models.append(m)
+                
+        last_error = None
+        for model in models:
+            try:
+                llm = ChatOpenAI(
+                    api_key=os.getenv("OPENROUTER_API_KEY"),
+                    base_url="https://openrouter.ai/api/v1",
+                    model=model,
+                    temperature=0.5,
+                    max_retries=1
+                )
+                result = (prompt | llm | StrOutputParser()).invoke({"topic": topic, "num_questions": num_questions, "context": context})
+                try:
+                    parsed = json.loads(result)
+                    return parsed
+                except Exception as e:
+                    # Clean markdown code blocks if any
+                    cleaned = result.strip()
+                    if cleaned.startswith("```json"):
+                        cleaned = cleaned[7:]
+                    if cleaned.endswith("```"):
+                        cleaned = cleaned[:-3]
+                    cleaned = cleaned.strip()
+                    parsed = json.loads(cleaned)
+                    return parsed
+            except Exception as e:
+                last_error = e
+                import sys
+                print(f"Failed generate_quiz using model {model}: {e}", file=sys.stderr)
+                continue
+                
+        raise HTTPException(
+            status_code=500,
+            detail=f"Quiz generation failed. All models failed. Last error: {str(last_error)}"
+        )
     except Exception as e:
         import traceback
         traceback.print_exc()
