@@ -63,6 +63,16 @@ public class AiController {
         }
     }
 
+    @PostMapping("/ats/convert-docx")
+    public ResponseEntity<Map<String, Object>> convertResumeToDocx(@RequestBody Map<String, Object> payload) {
+        try {
+            Map<String, Object> result = aiService.convertResumeToDocx(payload);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/interview/generate-questions")
     public ResponseEntity<Object> generateInterviewQuestions(@RequestBody Map<String, Object> request) {
         try {

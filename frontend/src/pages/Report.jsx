@@ -185,13 +185,8 @@ export default function Report() {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => { if (improvedText) downloadResume(improvedText, rewriteMode); }}
-            disabled={!improvedText}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-sm ${
-              improvedText 
-                ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:shadow-lg hover:shadow-green-500/20 text-white cursor-pointer" 
-                : "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5"
-            }`}
+            onClick={() => { downloadResume(improvedText || resumeText, improvedText ? rewriteMode : "original"); }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-sm bg-gradient-to-r from-green-600 to-emerald-600 hover:shadow-lg hover:shadow-green-500/20 text-white cursor-pointer"
           >
             <Download size={16} /> Download Tailored Resume (.docx)
           </button>

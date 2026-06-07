@@ -154,4 +154,9 @@ public class AiService {
         }
         return restTemplate.postForObject(url.toString(), null, Object.class);
     }
+
+    public Map<String, Object> convertResumeToDocx(Map<String, Object> payload) {
+        String url = FASTAPI_BASE_URL + "/ats/convert-docx";
+        return restTemplate.postForObject(url, payload, Map.class);
+    }
 }
