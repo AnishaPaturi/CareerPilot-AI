@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useInterview } from '../../context/InterviewContext';
 import { Mic, MicOff, Video as VideoIcon, VideoOff, X, AlertTriangle, Send, Loader2, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,6 +26,9 @@ export function InterviewRoom() {
   
   const [transcript, setTranscript] = useState([]);
   const [answers, setAnswers] = useState([]);
+  const [recognition, setRecognition] = useState(null);
+  const videoRef = useRef(null);
+  const [stream, setStream] = useState(null);
 
   // Load questions from current session
   useEffect(() => {
@@ -87,24 +90,123 @@ export function InterviewRoom() {
     };
   }, [currentQuestionIndex, questions, isTtsEnabled]);
 
-  // Tab visibility/proctoring detection
+  // Proctoring detection: Tab visibility change & Window blur (focus loss)
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        const nextCount = tabSwitchCount + 1;
-        setTabSwitchCount(nextCount);
-        setShowTabWarning(true);
-        
-        if (nextCount >= 3) {
-          // Auto-terminate interview
-          endInterviewEarly();
-        }
+    const handleFocusLoss = () => {
+      const nextCount = tabSwitchCount + 1;
+      setTabSwitchCount(nextCount);
+      setShowTabWarning(true);
+      
+      if (nextCount >= 3) {
+        // Auto-terminate interview
+        endInterviewEarly();
       }
     };
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        handleFocusLoss();
+      }
+    };
+
+    const handleWindowBlur = () => {
+      handleFocusLoss();
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+    };
   }, [tabSwitchCount]);
+
+  // Handle Camera Stream
+  useEffect(() => {
+    async function enableStream() {
+      try {
+        const userStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: 640, height: 480 },
+          audio: false
+        });
+        setStream(userStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = userStream;
+        }
+      } catch (err) {
+        console.error("Failed to get webcam stream:", err);
+      }
+    }
+
+    if (isCameraOn) {
+      enableStream();
+    } else {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+      }
+    }
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [isCameraOn]);
+
+  // Initialize Speech Recognition for Speech-to-Text
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = 'en-US';
+      
+      rec.onresult = (event) => {
+        let transcriptText = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcriptText += event.results[i][0].transcript;
+        }
+        setUserAnswer(transcriptText);
+      };
+      
+      rec.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        setIsListening(false);
+      };
+      
+      rec.onend = () => {
+        setIsListening(false);
+      };
+      
+      setRecognition(rec);
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognition) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+      return;
+    }
+    
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      setIsListening(true);
+      recognition.start();
+    }
+  };
+
+  // If mic is turned off, stop listening
+  useEffect(() => {
+    if (!isMicOn && isListening && recognition) {
+      recognition.stop();
+      setIsListening(false);
+    }
+  }, [isMicOn]);
 
   const handleSendAnswer = () => {
     if (!userAnswer.trim()) return;
@@ -295,9 +397,13 @@ export function InterviewRoom() {
           {/* User Video Feed */}
           <div className="relative bg-slate-950 border border-purple-500/10 rounded-xl overflow-hidden flex items-center justify-center">
             {isCameraOn ? (
-              <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                <span className="text-6xl animate-pulse">👤</span>
-              </div>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover scale-x-[-1]"
+              />
             ) : (
               <div className="text-center text-slate-500">
                 <VideoOff className="w-12 h-12 mx-auto mb-2" />
@@ -330,13 +436,23 @@ export function InterviewRoom() {
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder={questions.length > 0 && currentQuestionIndex === answers.length ? "Type your answer here..." : "AI is thinking..."}
+              placeholder={questions.length > 0 && currentQuestionIndex === answers.length ? "Type/Speak your answer here..." : "AI is thinking..."}
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendAnswer()}
               disabled={isAiThinking || currentQuestionIndex < answers.length}
               className="flex-1 bg-slate-900 border border-purple-500/20 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition-all disabled:opacity-50"
             />
+            {isMicOn && (
+              <button
+                onClick={toggleListening}
+                className={`p-3 rounded-lg font-medium transition-all ${isListening ? 'bg-red-600 text-white animate-pulse' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                title={isListening ? "Stop listening" : "Start speaking"}
+                disabled={isAiThinking || currentQuestionIndex < answers.length}
+              >
+                <Mic className="w-5 h-5" />
+              </button>
+            )}
             <button
               onClick={handleSendAnswer}
               disabled={!userAnswer.trim() || isAiThinking || currentQuestionIndex < answers.length}

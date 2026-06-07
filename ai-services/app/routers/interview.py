@@ -93,7 +93,7 @@ async def generate_interview_questions(request: InterviewRequest):
     """)
     
     models = []
-    for m in [settings.OPENROUTER_MODEL, "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+    for m in [settings.OPENROUTER_MODEL, "moonshotai/kimi-k2.6:free", "z-ai/glm-4.5-air:free", "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
         if m and m not in models:
             models.append(m)
 
@@ -148,7 +148,7 @@ async def evaluate_interview_answer(submission: AnswerSubmission):
     """)
     
     models = []
-    for m in [settings.OPENROUTER_MODEL, "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+    for m in [settings.OPENROUTER_MODEL, "moonshotai/kimi-k2.6:free", "z-ai/glm-4.5-air:free", "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
         if m and m not in models:
             models.append(m)
 

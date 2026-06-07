@@ -59,7 +59,7 @@ async def generate_dsa_roadmap(request: RoadmapRequest):
     """)
     
     models = []
-    for m in [settings.OPENROUTER_MODEL, "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+    for m in [settings.OPENROUTER_MODEL, "moonshotai/kimi-k2.6:free", "z-ai/glm-4.5-air:free", "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
         if m and m not in models:
             models.append(m)
             
@@ -70,7 +70,8 @@ async def generate_dsa_roadmap(request: RoadmapRequest):
                 api_key=os.getenv("OPENROUTER_API_KEY"),
                 base_url="https://openrouter.ai/api/v1",
                 model=model,
-                temperature=0.5
+                temperature=0.5,
+                max_retries=1
             )
             chain = prompt | llm | parser
             result = chain.invoke({
@@ -104,7 +105,7 @@ async def recommend_problems(topic: str, count: int = 10, difficulty: Optional[s
     difficulty_filter = f"Difficulty: {difficulty}" if difficulty else "Mix of difficulties"
     
     models = []
-    for m in [settings.OPENROUTER_MODEL, "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+    for m in [settings.OPENROUTER_MODEL, "moonshotai/kimi-k2.6:free", "z-ai/glm-4.5-air:free", "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
         if m and m not in models:
             models.append(m)
             
@@ -115,7 +116,8 @@ async def recommend_problems(topic: str, count: int = 10, difficulty: Optional[s
                 api_key=os.getenv("OPENROUTER_API_KEY"),
                 base_url="https://openrouter.ai/api/v1",
                 model=model,
-                temperature=0.5
+                temperature=0.5,
+                max_retries=1
             )
             chain = prompt | llm | parser
             result = chain.invoke({
