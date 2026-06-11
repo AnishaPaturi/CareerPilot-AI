@@ -43,6 +43,8 @@ The platform uses a decoupled backend design: an enterprise-level Spring Boot ga
 
 ## 🛠️ Technology Stack
 
+![Technology Stack](assets/Tech%20Stack.png)
+
 | Layer | Technology | Key Capabilities |
 | --- | --- | --- |
 | **Frontend** | React (Vite), Tailwind CSS, Lucide Icons, Recharts | Dynamic dashboards, responsive controls, visual analytics, charts |
