@@ -59,24 +59,151 @@ The platform uses a decoupled backend design: an enterprise-level Spring Boot ga
 
 ## 📂 Database Design
 
-The relational database is managed by MySQL. The system initializes automatically from the [schema.sql](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/resources/schema.sql) on startup.
+The relational database is managed by MySQL. The schema initializes automatically on backend startup from the [schema.sql](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/resources/schema.sql) file.
 
-### Relational Schema Layout
-* **`users`**: Unified accounts storing name, email, credentials, and account roles (`STUDENT`, `ADMIN`, `RECRUITER`).
-* **`students`**: Detailed profiles tracking CGPA, branches, active backlogs, skills, education, and resume metrics.
-* **`companies`**: Details of corporate recruiters and partner organizations.
-* **`drives`**: Placement drives detailing target roles, salary packages (LPA), eligibility limits (CGPA), and dates.
-* **`applications`**: Application tracking linking students to drives with status stages (`APPLIED`, `SHORTLISTED`, `TEST`, `INTERVIEW`, `SELECTED`, `REJECTED`).
-* **`interviews`**: Corporate interviewer schedules, rounds, feedback notes, and scores.
-* **`resumes`**: Structured template and configuration JSON arrays for students.
-* **`resume_analyses`**: Historical ATS scores, keywords found, missing terms, and feedback suggestions.
-* **`dsa_topics`**: Problem metadata containing categories, difficulty, and LeetCode link keys.
-* **`dsa_roadmaps`**: Personalized roadmaps containing daily goals, timelines, and weak area focus arrays.
-* **`dsa_progress`**: Solution logs tracking problems solved per topic and confidence levels.
-* **`mock_interviews`**: Log of mock interview questions, user transcripts, and detailed evaluation matrices.
-* **`documents`**: Track uploaded study files, text chunks, and storage references for the RAG chatbot.
-* **`query_logs`**: Conversational chat history logs linked to user files.
-* **`notifications`**: Real-time read/unread notifications for placement rounds and updates.
+### 📐 Entity-Relationship (ER) Diagram
+
+```mermaid
+erDiagram
+    users {
+        int id PK
+        string email UK
+        string password
+        string name
+        enum role
+    }
+    students {
+        int id PK
+        string email UK
+        decimal cgpa
+        string branch
+        int active_backlogs
+        text skills
+    }
+    companies {
+        int id PK
+        string name
+    }
+    drives {
+        int id PK
+        int company_id FK
+        string role
+        decimal package_lpa
+    }
+    applications {
+        int id PK
+        int student_id FK
+        int drive_id FK
+        enum status
+    }
+    interviews {
+        int id PK
+        int student_id FK
+        int drive_id FK
+        string round
+        enum status
+    }
+    resumes {
+        int id PK
+        int student_id FK
+        json resume_data
+    }
+    resume_analyses {
+        int id PK
+        int student_id FK
+        int ats_score
+    }
+    dsa_topics {
+        int id PK
+        string name
+        enum difficulty
+    }
+    dsa_roadmaps {
+        int id PK
+        int student_id FK
+        json daily_goals
+    }
+    dsa_progress {
+        int id PK
+        int student_id FK
+        int topic_id FK
+        int problems_solved
+    }
+    mock_interviews {
+        int id PK
+        int student_id FK
+        enum interview_type
+    }
+    documents {
+        int id PK
+        int user_id FK
+        string filename
+    }
+    query_logs {
+        int id PK
+        int user_id FK
+        int document_id FK
+    }
+    notifications {
+        int id PK
+        int user_id FK
+        boolean is_read
+    }
+
+    users ||--o{ documents : "owns"
+    users ||--o{ query_logs : "queries"
+    users ||--o{ notifications : "receives"
+    companies ||--o{ drives : "sponsors"
+    drives ||--o{ applications : "tracks"
+    drives ||--o{ interviews : "schedules"
+    students ||--o{ applications : "applies"
+    students ||--o{ interviews : "attends"
+    students ||--o{ resumes : "creates"
+    students ||--o{ resume_analyses : "receives"
+    students ||--o{ dsa_roadmaps : "assigned"
+    students ||--o{ dsa_progress : "logs"
+    students ||--o{ mock_interviews : "takes"
+    dsa_topics ||--o{ dsa_progress : "links"
+    documents ||--o{ query_logs : "references"
+```
+
+### 🗄️ Relational Schema Layout (Modular Grouping)
+
+#### 🔑 Core Accounts & Profiles
+| Table | Description | Primary / Foreign Keys |
+| :--- | :--- | :--- |
+| **`users`** | Central login accounts supporting Student, Admin, and Recruiter credentials. | `id` (PK) |
+| **`students`**| Detailed profiles tracking CGPA, branch, backlogs, skills, education, and experience. | `id` (PK) |
+
+#### 💼 Placement Drive System
+| Table | Description | Primary / Foreign Keys |
+| :--- | :--- | :--- |
+| **`companies`**| Profiles of corporate recruiters and partner organizations. | `id` (PK) |
+| **`jobs`** | Indexed postings from internal sources and JSearch API feeds. | `id` (PK), `company_id` (FK) |
+| **`drives`** | Active campus recruitment drives listing target CTC/LPA and criteria. | `id` (PK), `company_id` (FK) |
+| **`applications`**| Track state changes (`APPLIED`, `SHORTLISTED`, `SELECTED`, `REJECTED`). | `id` (PK), `student_id` (FK), `drive_id` (FK) |
+| **`interviews`**| Chronological corporate interview rounds, scores, and feedback remarks. | `id` (PK), `student_id` (FK), `drive_id` (FK) |
+
+#### 🤖 Resume Builder & AI Analytics
+| Table | Description | Primary / Foreign Keys |
+| :--- | :--- | :--- |
+| **`resumes`** | Structured JSON layouts storing template styles and user resume texts. | `id` (PK), `student_id` (FK) |
+| **`resume_analyses`**| Historical logs capturing ATS scores, missing keywords, and layout critiques. | `id` (PK), `student_id` (FK) |
+| **`mock_interviews`**| Simulation transcripts, parsed questions, and technical/HR evaluation matrices. | `id` (PK), `student_id` (FK) |
+
+#### 📈 AlgoMentor DSA Tracker
+| Table | Description | Primary / Foreign Keys |
+| :--- | :--- | :--- |
+| **`dsa_topics`**| LeetCode problem titles, difficulty levels (Easy/Med/Hard), and category tags. | `id` (PK) |
+| **`dsa_roadmaps`**| Custom generated daily milestones matching tier goals. | `id` (PK), `student_id` (FK) |
+| **`dsa_progress`**| Solution metrics logging problems completed and student confidence. | `id` (PK), `student_id` (FK), `topic_id` (FK) |
+
+#### 📂 Document RAG & Communications
+| Table | Description | Primary / Foreign Keys |
+| :--- | :--- | :--- |
+| **`documents`**| Meta index for uploaded study files, chunk counts, and storage locations. | `id` (PK), `user_id` (FK) |
+| **`query_logs`**| Semantic history linking student questions to retrieved contexts. | `id` (PK), `user_id` (FK), `document_id` (FK) |
+| **`notifications`**| Real-time alerts for interview schedules and shortlists. | `id` (PK), `user_id` (FK) |
 
 ---
 
