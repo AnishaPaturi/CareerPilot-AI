@@ -129,6 +129,9 @@ export function InterviewRoom() {
     async function enableStream() {
       try {
         setCameraError(null);
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Webcam is not supported in this browser/context (requires HTTPS/localhost).');
+        }
         const userStream = await navigator.mediaDevices.getUserMedia({
           video: { width: 640, height: 480 },
           audio: false
@@ -146,6 +149,7 @@ export function InterviewRoom() {
     if (isCameraOn) {
       enableStream();
     } else {
+      setCameraError(null);
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         setStream(null);
@@ -212,9 +216,12 @@ export function InterviewRoom() {
 
   // If mic is turned off, stop listening
   useEffect(() => {
-    if (!isMicOn && isListening && recognition) {
-      recognition.stop();
-      setIsListening(false);
+    if (!isMicOn) {
+      if (isListening && recognition) {
+        recognition.stop();
+        setIsListening(false);
+      }
+      setMicError(null);
     }
   }, [isMicOn]);
 

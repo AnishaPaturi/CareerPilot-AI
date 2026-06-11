@@ -1,6 +1,100 @@
 import { useState } from 'react';
 import { dsaPlannerAPI } from '../services/api';
 
+const COMMON_LEETCODE_MAP = {
+  "two sum": { id: 1, difficulty: "Easy" },
+  "contains duplicate": { id: 217, difficulty: "Easy" },
+  "valid anagram": { id: 242, difficulty: "Easy" },
+  "best time to buy and sell stock": { id: 121, difficulty: "Easy" },
+  "valid parentheses": { id: 20, difficulty: "Easy" },
+  "merge two sorted lists": { id: 21, difficulty: "Easy" },
+  "binary search": { id: 704, difficulty: "Easy" },
+  "flood fill": { id: 733, difficulty: "Easy" },
+  "invert binary tree": { id: 226, difficulty: "Easy" },
+  "maximum subarray": { id: 53, difficulty: "Medium" },
+  "lowest common ancestor of a binary search tree": { id: 235, difficulty: "Easy" },
+  "balanced binary tree": { id: 110, difficulty: "Easy" },
+  "linked list cycle": { id: 141, difficulty: "Easy" },
+  "implement queue using stacks": { id: 232, difficulty: "Easy" },
+  "first bad version": { id: 278, difficulty: "Easy" },
+  "ransom note": { id: 383, difficulty: "Easy" },
+  "climbing stairs": { id: 70, difficulty: "Easy" },
+  "longest palindrome": { id: 409, difficulty: "Easy" },
+  "reverse linked list": { id: 206, difficulty: "Easy" },
+  "majority element": { id: 169, difficulty: "Easy" },
+  "add binary": { id: 67, difficulty: "Easy" },
+  "diameter of binary tree": { id: 543, difficulty: "Easy" },
+  "middle of the linked list": { id: 876, difficulty: "Easy" },
+  "3sum": { id: 15, difficulty: "Medium" },
+  "binary tree level order traversal": { id: 102, difficulty: "Medium" },
+  "clone graph": { id: 133, difficulty: "Medium" },
+  "evaluate reverse polish notation": { id: 150, difficulty: "Medium" },
+  "course schedule": { id: 207, difficulty: "Medium" },
+  "implement trie": { id: 208, difficulty: "Medium" },
+  "coin change": { id: 322, difficulty: "Medium" },
+  "product of array except self": { id: 238, difficulty: "Medium" },
+  "min stack": { id: 155, difficulty: "Medium" },
+  "validate binary search tree": { id: 98, difficulty: "Medium" },
+  "number of islands": { id: 200, difficulty: "Medium" },
+  "rotting oranges": { id: 994, difficulty: "Medium" },
+  "search in rotated sorted array": { id: 33, difficulty: "Medium" },
+  "combination sum": { id: 39, difficulty: "Medium" },
+  "k closest points to origin": { id: 973, difficulty: "Medium" },
+  "longest substring without repeating characters": { id: 3, difficulty: "Medium" },
+  "lru cache": { id: 146, difficulty: "Medium" },
+  "merge intervals": { id: 56, difficulty: "Medium" },
+  "permutations": { id: 46, difficulty: "Medium" },
+  "lowest common ancestor of a binary tree": { id: 236, difficulty: "Medium" },
+  "time based key value store": { id: 981, difficulty: "Medium" },
+  "accounts merge": { id: 721, difficulty: "Medium" },
+  "sort colors": { id: 75, difficulty: "Medium" },
+  "word break": { id: 139, difficulty: "Medium" },
+  "subsets": { id: 78, difficulty: "Medium" },
+  "binary tree right side view": { id: 199, difficulty: "Medium" },
+  "longest consecutive sequence": { id: 128, difficulty: "Medium" },
+  "unique paths": { id: 62, difficulty: "Medium" },
+  "kth largest element in an array": { id: 215, difficulty: "Medium" },
+  "container with most water": { id: 11, difficulty: "Medium" },
+  "find all anagrams in a string": { id: 438, difficulty: "Medium" },
+  "minimum height trees": { id: 310, difficulty: "Medium" },
+  "task scheduler": { id: 621, difficulty: "Medium" },
+  "insert interval": { id: 57, difficulty: "Medium" },
+  "01 matrix": { id: 542, difficulty: "Medium" },
+  "kth smallest element in a bst": { id: 230, difficulty: "Medium" },
+  "house robber": { id: 198, difficulty: "Medium" },
+  "maximum depth of binary tree": { id: 104, difficulty: "Easy" },
+  "same tree": { id: 100, difficulty: "Easy" },
+  "subtree of another tree": { id: 572, difficulty: "Easy" }
+};
+
+const formatProblemString = (prob) => {
+  if (!prob) return '';
+  if (prob.trim().startsWith('#')) return prob;
+  
+  const cleanTitle = prob
+    .replace(/\s*\(Easy\)|\s*\(Medium\)|\s*\(Hard\)/i, '')
+    .trim()
+    .toLowerCase();
+    
+  const match = COMMON_LEETCODE_MAP[cleanTitle];
+  if (match) {
+    return `#${match.id} ${prob.replace(/\s*\(Easy\)|\s*\(Medium\)|\s*\(Hard\)/i, '').trim()} (${match.difficulty})`;
+  }
+  return prob;
+};
+
+const getLeetCodeUrl = (problemStr) => {
+  if (!problemStr) return null;
+  let cleanTitle = problemStr
+    .replace(/#\d+\s*/, '')
+    .replace(/\s*\(Easy\)|\s*\(Medium\)|\s*\(Hard\)/i, '')
+    .trim();
+    
+  if (!cleanTitle) return null;
+  const slug = cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return `https://leetcode.com/problems/${slug}/`;
+};
+
 export default function DSAPlanner() {
   const [currentLevel, setCurrentLevel] = useState('Beginner');
   const [targetCompany, setTargetCompany] = useState('MAANG');
@@ -91,12 +185,27 @@ export default function DSAPlanner() {
                 <div className="flex-1">
                   <h4 className="text-lg font-bold text-slate-200 mb-3">{goal.topic}</h4>
                   <ul className="space-y-2">
-                    {goal.problems?.map((prob, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="text-blue-500 mt-1">▹</span>
-                        <span className="text-slate-300">{prob}</span>
-                      </li>
-                    ))}
+                    {goal.problems?.map((prob, i) => {
+                      const formattedProb = formatProblemString(prob);
+                      const url = getLeetCodeUrl(formattedProb);
+                      return (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-blue-500 mt-1">▹</span>
+                          {url ? (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 hover:underline transition-all text-slate-300"
+                            >
+                              {formattedProb}
+                            </a>
+                          ) : (
+                            <span className="text-slate-300">{formattedProb}</span>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               </div>

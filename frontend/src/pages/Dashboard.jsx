@@ -11,6 +11,14 @@ import CSNotes from '../components/CSNotes';
 
 export default function Dashboard() {
   const { user, role, logout } = useAuth();
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      return dateStr;
+    }
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -399,7 +407,7 @@ export default function Dashboard() {
                                   )}
                                   {job.category && <span>· {job.category}</span>}
                                   {job.posted_at && (
-                                    <span>· Posted {new Date(job.posted_at).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</span>
+                                    <span>· Posted {formatDate(job.posted_at)}</span>
                                   )}
                                 </div>
                               )}

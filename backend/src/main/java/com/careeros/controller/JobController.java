@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collections;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -24,6 +23,7 @@ public class JobController {
         try {
             return jobService.getJobs(keyword, location, jobType);
         } catch (Exception e) {
+            e.printStackTrace();
             return Collections.singletonMap("data", Collections.emptyList());
         }
     }

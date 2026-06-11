@@ -1,7 +1,6 @@
 package com.careeros.service;
 
 import com.careeros.service.careernest.CareerNestClient;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,15 +16,12 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
-    @Cacheable(value = "jobs", key = "{#keyword, #location, #jobType}", unless = "#result == null")
     public Object getJobs(String keyword, String location, String jobType) {
-        // keyword is the job title / search query; location param is accepted but *always ignored*
-        // — jobs are sourced exclusively from India in the downstream client
         List<Map<String, Object>> jobs = careerNestClient.searchJobs(
                 keyword == null ? null : keyword.trim(),
                 jobType == null ? null : jobType.trim(),
-                50                     // max results per call
+                50
         );
-        return Map.of("data", jobs);   // {"data":[...]} shape expected by Dashboard JSX
+        return Map.of("data", jobs);
     }
 }

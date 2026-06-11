@@ -52,6 +52,7 @@ public class CareerNestClient {
      * @return list of uniform job records (never null)
      */
     public List<Map<String, Object>> searchJobs(String keyword, String jobType, int limit) {
+        System.out.println("[DEBUG] searchJobs entered: keyword=" + keyword + ", jobType=" + jobType + ", limit=" + limit);
         final String LOCATION = "India";
         try {
             long now = System.currentTimeMillis();
@@ -61,6 +62,7 @@ public class CareerNestClient {
             }
 
             String cacheKey = (keyword + "|" + LOCATION + "|" + jobType + "|" + limit).toLowerCase();
+            System.out.println("[DEBUG] cacheKey=" + cacheKey + ", cache contains=" + cache.containsKey(cacheKey));
             if (cache.containsKey(cacheKey)) {
                 return cache.get(cacheKey);
             }
@@ -74,15 +76,17 @@ public class CareerNestClient {
             if (jobType != null && !jobType.isBlank())
                 url.append("&type=").append(java.net.URLEncoder.encode(jobType, "UTF-8"));
 
+            System.out.println("[DEBUG] Requesting URL: " + url.toString());
             String response = restTemplate.getForObject(url.toString(), String.class);
             List<Map<String, Object>> result = parseAndFilter(response, keyword, jobType, limit, cacheKey);
             if (result == null || result.isEmpty()) {
+                System.out.println("[DEBUG] result is empty, fetching mock fallback");
                 return getMockJobs(keyword, jobType, limit);
             }
             return result;
 
         } catch (Exception e) {
-            System.err.println("CareerNest external API unavailable, loading mock jobs: " + e.getMessage());
+            System.err.println("[DEBUG] CareerNest external API unavailable, loading mock jobs: " + e.getMessage());
             return getMockJobs(keyword, jobType, limit);
         }
     }
@@ -125,21 +129,31 @@ public class CareerNestClient {
         // Always enforce India — word-boundary check so "Indiana" / "Indianapolis" don't match
         Pattern india = Pattern.compile("\\bindia\\b", Pattern.CASE_INSENSITIVE);
         String jobLoc = str(job, "location");
-        if (jobLoc == null || !india.matcher(jobLoc).find()) return false;
+        if (jobLoc == null || !india.matcher(jobLoc).find()) {
+            System.out.println("[DEBUG] job Loc fail: " + job.get("title") + ", location=" + jobLoc);
+            return false;
+        }
 
-        if (keyword != null && !keyword.isBlank()) {
+        if (keyword != null && !keyword.isBlank() && !keyword.equalsIgnoreCase("null") && !keyword.equalsIgnoreCase("undefined")) {
             String kw = keyword.toLowerCase();
             String title = str(job, "title").toLowerCase();
             String company = str(job, "company").toLowerCase();
-            if (!title.contains(kw) && !company.contains(kw)) return false;
+            if (!title.contains(kw) && !company.contains(kw)) {
+                System.out.println("[DEBUG] job keyword fail: " + title + ", company=" + company + ", kw=" + kw);
+                return false;
+            }
         }
 
-        if (jobType != null && !jobType.isBlank()) {
+        if (jobType != null && !jobType.isBlank() && !jobType.equalsIgnoreCase("null") && !jobType.equalsIgnoreCase("undefined")) {
             String jt = jobType.toLowerCase();
             String jtField = str(job, "job_type");
-            if (jtField != null && !jtField.toLowerCase().contains(jt)) return false;
+            if (jtField != null && !jtField.toLowerCase().contains(jt)) {
+                System.out.println("[DEBUG] job type fail: " + job.get("title") + ", jtField=" + jtField + ", jt=" + jt);
+                return false;
+            }
         }
 
+        System.out.println("[DEBUG] job matched successfully: " + job.get("title"));
         return true;
     }
 
@@ -187,6 +201,7 @@ public class CareerNestClient {
     }
 
     private List<Map<String, Object>> getMockJobs(String keyword, String jobType, int limit) {
+        System.out.println("[DEBUG] getMockJobs entered: keyword=" + keyword + ", jobType=" + jobType);
         List<Map<String, Object>> mockList = new ArrayList<>();
         
         mockList.add(createMockJob("1", "Software Engineer - React/Node", "Google", "https://logo.clearbit.com/google.com", "Bengaluru, India", "Full-time", "Engineering", "Build scalable web applications using React, Node.js, and TypeScript. Collaborate with cross-functional product teams.", "24 LPA", "https://careers.google.com", "https://careers.google.com", "2026-06-10"));
@@ -200,10 +215,12 @@ public class CareerNestClient {
         mockList.add(createMockJob("9", "React Native Developer", "TCS", "https://logo.clearbit.com/tcs.com", "Bengaluru, India", "Full-time", "Mobile", "Design and develop high-performance cross-platform Android and iOS apps using React Native.", "9 LPA", "https://www.tcs.com/careers", "https://www.tcs.com/careers", "2026-06-02"));
         mockList.add(createMockJob("10", "UI/UX Designer", "Infosys", "https://logo.clearbit.com/infosys.com", "Bengaluru, India", "Full-time", "Design", "Create interactive prototypes, wireframes, and premium UI designs using Figma and CSS/HTML modules.", "8 LPA", "https://www.infosys.com/careers", "https://www.infosys.com/careers", "2026-06-01"));
 
-        return mockList.stream()
+        List<Map<String, Object>> filtered = mockList.stream()
                 .filter(job -> matchesFilters(job, keyword, jobType))
                 .limit(limit)
                 .collect(Collectors.toList());
+        System.out.println("[DEBUG] getMockJobs returning " + filtered.size() + " items");
+        return filtered;
     }
 
     private Map<String, Object> createMockJob(String id, String title, String company, String logo, String location, String type, String category, String desc, String salary, String url, String applyUrl, String postedAt) {
