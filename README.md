@@ -280,121 +280,168 @@ A centralized learning platform with semantic file searching, notes management, 
 * **Integrated PDF & Note Viewer**: Provides a clean dual-pane view with a PDF rendering library (`react-pdf`) and a markdown note-taking board in [StudyMaterials.jsx](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/frontend/src/components/StudyMaterials.jsx) to allow students to read, edit, and summarize materials concurrently.
 * **Interactive CS Notes Hub**: Deployed in [CSNotes.jsx](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/frontend/src/components/CSNotes.jsx) to serve interactive reference sheets for subjects like Operating Systems, DBMS, SQL, OOP, and Networks. Features a search tool and syntax-highlighted code blocks.
 
----
-
 ## 🚀 Local Installation & Setup
 
-### Prerequisites
-* Java JDK 17+
-* Python 3.10+
-* MySQL Server (running on port 3306)
-* Node.js (v18+)
-* **Docker Desktop** (required to run Redis, RabbitMQ, Elasticsearch, and the monitoring stack)
+Before running the application, ensure your environment meets the prerequisites below. You can verify each dependency by running its corresponding check command in your terminal.
+
+### 📋 Prerequisites & Verification
+
+| Dependency | Required Version | Verification Command | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Java JDK** | 17+ | `java -version` | Primary backend execution environment (Spring Boot) |
+| **Python** | 3.10+ | `python --version` | AI microservices host (FastAPI) |
+| **Node.js** | v18+ | `node -v` | UI frontend build & dev tools (React Vite) |
+| **MySQL Server** | 8.0+ | `mysql --version` | Relational database (user info, drives, progress logs) |
+| **Docker Engine** | 20.10+ | `docker --version` | Container runtime (Redis, RabbitMQ, telemetry, Search) |
 
 ---
 
-### Step 1.2: Spin Up Infrastructure Services (Docker)
-The project utilizes containerized infrastructure services for caching, task queuing, search indexing, and monitoring.
+### 🐳 Step 1: Spin Up Infrastructure Services (Docker)
+The ecosystem uses containerized services for caching, asynchronous processing, full-text search, and observability.
 
 1. Ensure **Docker Desktop** is running.
-2. Navigate to the Docker deployment folder:
+2. Open a terminal and navigate to the Docker deployment directory:
    ```bash
    cd deployment/docker
    ```
-3. Run the following command to download and start all containers in the background:
+3. Boot up all service containers in detached mode:
    ```bash
    docker compose up -d
    ```
+4. Verify that all 6 services are active and running:
+   ```bash
+   docker ps
+   ```
 
-#### Infrastructure Services & Login Details
+#### 🖥️ Infrastructure Control Panel URLs & Credentials
 
-| Service | Local URL | Port | Default Credentials | Purpose in AI-CareerOS |
+| Service | Host Port | Web UI / Dashboard URL | Default Credentials | Platform Function |
 | :--- | :--- | :--- | :--- | :--- |
-| **RabbitMQ Console** | [http://localhost:15672](http://localhost:15672) | `5672`, `15672` | Username: `guest`<br>Password: `guest` | Message broker for asynchronous AI resume parsing and mock evaluation queues. |
-| **Grafana Dashboards** | [http://localhost:3000](http://localhost:3000) | `3000` | Username: `admin`<br>Password: `admin` | Visualizes service metrics and log streams. |
-| **Prometheus** | [http://localhost:9090](http://localhost:9090) | `9090` | *None* | Scrapes application JVM and HTTP metrics from Actuator. |
-| **Elasticsearch** | [http://localhost:9200](http://localhost:9200) | `9200` | *None (Security Disabled)* | Full-text candidate/resume and job board indexing. |
-| **Redis Server** | *Internal* | `6379` | *None* | Session caching and API response caching for LLM endpoints. |
-| **Loki Log Engine** | [http://localhost:3100](http://localhost:3100) | `3100` | *None* | Aggregates application log stdout streams. |
+| **RabbitMQ** | `5672` / `15672` | [http://localhost:15672](http://localhost:15672) | User: `guest`<br>Pass: `guest` | Async task message broker for resume parsing & evaluations |
+| **Grafana** | `3000` | [http://localhost:3000](http://localhost:3000) | User: `admin`<br>Pass: `admin` | Telemetry visualization dashboard |
+| **Prometheus** | `9090` | [http://localhost:9090](http://localhost:9090) | *None* | Actuator JVM & HTTP metrics scraping |
+| **Elasticsearch**| `9200` | [http://localhost:9200](http://localhost:9200) | *None (Security Disabled)* | Full-text indexing for candidates & job boards |
+| **Redis Server** | `6379` | *Internal Connection Only* | *None* | Caching layer for API listings & roadmaps |
+| **Loki Engine**  | `3100` | [http://localhost:3100](http://localhost:3100) | *None* | Logs aggregator engine |
 
 ---
 
-### Step 1: Clone and Database Setup
-1. Clone the repository.
-2. In MySQL, create a database named `careeros`:
+### 🗄️ Step 2: MySQL Database Setup
+1. Log in to your local MySQL server (using CLI or a tool like MySQL Workbench / DBeaver).
+2. Create a fresh schema for the platform:
    ```sql
    CREATE DATABASE careeros;
    ```
-3. The database schema, initial admin user, and sample placement data will seed automatically on backend startup using `schema.sql`.
+3. > [!NOTE]
+   > You do not need to manually import database tables. On Spring Boot backend startup, Hibernate will read [schema.sql](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/resources/schema.sql) and automatically seed all tables, indexes, sample company entries, mock placement drives, and the default admin user.
 
 ---
 
-### Step 2: Configure and Run Python AI Services
-1. Navigate to the `ai-services` folder:
+### 🐍 Step 3: Configure and Run Python AI Services
+The AI microservice performs resume scanning, RAG operations, mock interview evaluation, and roadmap planning.
+
+1. Open your terminal and navigate to the AI service directory:
    ```bash
    cd ai-services
    ```
-2. Create and activate a virtual environment:
+2. Create a local virtual environment:
    ```bash
    python -m venv venv
-   venv\Scripts\activate  # On macOS/Linux: source venv/bin/activate
    ```
-3. Install dependencies:
+3. Activate the virtual environment:
+   * **Windows (PowerShell)**:
+     ```powershell
+     venv\Scripts\Activate.ps1
+     ```
+   * **Windows (CMD)**:
+     ```cmd
+     venv\Scripts\activate.bat
+     ```
+   * **macOS / Linux**:
+     ```bash
+     source venv/bin/activate
+     ```
+4. Upgrade `pip` and install the package dependencies:
    ```bash
+   python -m pip install --upgrade pip
    pip install -r requirements.txt
    ```
-4. Create a `.env` file in the `ai-services` directory:
+5. Create a local environment variables file `.env` inside the `ai-services` root folder:
    ```env
+   # API Keys & LLM Settings
    OPENROUTER_API_KEY=your_openrouter_api_key_here
-   OPENROUTER_MODEL=google/gemma-4-31b-it:free
+   OPENROUTER_MODEL=google/gemma-2-9b-it:free
+
+   # Directories & Storage Config
    CHROMA_DB_DIR=./chroma_db
    UPLOAD_DIR=./uploads
+
+   # CORS Security Config
    ALLOWED_ORIGINS=["http://localhost:5173"]
    ```
-5. Start the FastAPI server on port `8000`:
+6. Launch the FastAPI server using Uvicorn:
    ```bash
    python -m uvicorn app.main:app --port 8000 --host 0.0.0.0
    ```
+   > [!TIP]
+   > The API documentation will be accessible at [http://localhost:8000/docs](http://localhost:8000/docs).
 
 ---
 
-### Step 3: Configure and Run Spring Boot Gateway
-1. Navigate to the `backend` folder:
+### 🍃 Step 4: Configure and Run Spring Boot Gateway
+The gateway manages credentials, processes student placements, runs algorithms, and handles user authentication.
+
+1. Open a terminal and navigate to the backend directory:
    ```bash
    cd backend
    ```
-2. Open `src/main/resources/application.properties` and configure your database credentials, OpenRouter key, and RapidAPI credentials:
+2. Open the property file [application.properties](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/resources/application.properties) and configure credentials:
    ```properties
+   # Relational DB Credentials
    spring.datasource.url=jdbc:mysql://localhost:3306/careeros
    spring.datasource.username=your_mysql_username
    spring.datasource.password=your_mysql_password
-   
-   openrouter.api.key=your_openrouter_key
-   jsearch.api.key=your_rapidapi_jsearch_key
+
+   # Infrastructure Connections
+   spring.rabbitmq.host=localhost
+   spring.rabbitmq.port=5672
+   spring.rabbitmq.username=guest
+   spring.rabbitmq.password=guest
+
+   spring.data.redis.host=localhost
+   spring.data.redis.port=6379
+
+   # AI Services Integrations
+   openrouter.api.key=your_openrouter_api_key_here
+   jsearch.api.key=your_rapidapi_jsearch_key_here
    ```
-3. Compile and launch the Spring Boot application using Maven:
+3. Compile the application and resolve Maven dependencies:
    ```bash
-   mvn compile
+   mvn clean compile
+   ```
+4. Run the Spring Boot application:
+   ```bash
    mvn spring-boot:run
    ```
-   The gateway backend will start on port `9999`.
+   The primary backend gateway will initialize and listen on port `9999`.
 
 ---
 
-### Step 4: Run the React Frontend
-1. Navigate to the `frontend` folder:
+### 💻 Step 5: Configure and Run React Frontend
+1. Open a terminal and navigate to the frontend folder:
    ```bash
    cd frontend
    ```
-2. Install dependencies:
+2. Verify node installation, and install the modules:
    ```bash
    npm install
    ```
-3. Run the development server:
+3. Boot up the local React development server:
    ```bash
    npm run dev
    ```
-4. Access the web dashboard at `http://localhost:5173`.
+4. Open your web browser and navigate to the dashboard at:
+   [http://localhost:5173](http://localhost:5173)
 
 ---
 
