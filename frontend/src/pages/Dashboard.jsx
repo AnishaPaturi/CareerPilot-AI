@@ -8,6 +8,8 @@ import DSAPlanner from '../components/DSAPlanner';
 import StudyMaterials from '../components/StudyMaterials';
 import NotesView from '../pages/Notes';
 import CSNotes from '../components/CSNotes';
+import RecruiterDashboard from '../components/RecruiterDashboard';
+import { useNotifications } from '../hooks/useNotifications';
 
 export default function Dashboard() {
   const { user, role, logout } = useAuth();
@@ -33,12 +35,21 @@ export default function Dashboard() {
     { id: 'notes', label: 'My Notes', icon: <BookOpen size={18} /> },
   ];
 
+  const recruiterNavItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+    { id: 'recruiter-portal', label: 'Recruiter Portal', icon: <Briefcase size={18} /> },
+  ];
+
   const adminNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
     { id: 'post-job', label: 'Post Drive', icon: <Briefcase size={18} /> },
   ];
 
-  const navItems = role === 'ADMIN' ? adminNavItems : studentNavItems;
+  const navItems = role === 'ADMIN' 
+    ? adminNavItems 
+    : role === 'RECRUITER' 
+      ? recruiterNavItems 
+      : studentNavItems;
 
   const [active, setActive] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -46,6 +57,8 @@ export default function Dashboard() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const fileInputRef = useRef(null);
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Live external jobs
   const [liveJobs, setLiveJobs] = useState([]);
@@ -232,19 +245,72 @@ export default function Dashboard() {
               <p className="text-slate-500 text-xs">{new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })}</p>
             </div>
           </div>
-          <div ref={menuRef} className="relative">
-            <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.07] rounded-xl px-4 py-2">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">{initials}</span>
-              </div>
-              <span className="text-white text-sm">{user?.name?.split(' ')[0]}</span>
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 w-44 bg-slate-900 border border-white/10 rounded-xl shadow-xl">
-                <button onClick={() => navigate('/settings')} className="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10">Settings</button>
-                <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/10">Logout</button>
-              </div>
-            )}
+          
+          <div className="flex items-center gap-4">
+            {/* Real-time Notifications Bell */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)} 
+                className="relative p-2.5 text-slate-400 hover:text-white bg-white/[0.04] border border-white/[0.07] rounded-xl transition-all"
+              >
+                <span>🔔</span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4.5 h-4.5 bg-red-500 text-white rounded-full text-[9px] font-bold flex items-center justify-center border border-slate-950 animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl z-50 p-4 max-h-[360px] overflow-y-auto">
+                  <div className="flex justify-between items-center pb-2 border-b border-white/10 mb-2">
+                    <span className="text-white text-xs font-semibold">Notifications</span>
+                    {unreadCount > 0 && (
+                      <button onClick={markAllAsRead} className="text-purple-400 hover:text-purple-300 text-[10px] font-semibold">
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {notifications.map(n => (
+                      <div 
+                        key={n.id} 
+                        onClick={() => markAsRead(n.id)}
+                        className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                          n.isRead 
+                            ? 'bg-transparent border-white/[0.04] text-slate-400' 
+                            : 'bg-purple-500/10 border-purple-500/20 text-white hover:bg-purple-500/15'
+                        }`}
+                      >
+                        <p className="font-semibold">{n.title}</p>
+                        <p className="mt-0.5 text-[11px] leading-relaxed text-slate-300">{n.message}</p>
+                        <span className="text-[9px] text-slate-500 mt-1 block">
+                          {new Date(n.createdAt || Date.now()).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    ))}
+                    {notifications.length === 0 && (
+                      <p className="text-center text-slate-500 py-6 text-xs">No notifications yet.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Profile Dropdown */}
+            <div ref={menuRef} className="relative">
+              <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.07] rounded-xl px-4 py-2">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">{initials}</span>
+                </div>
+                <span className="text-white text-sm">{user?.name?.split(' ')[0]}</span>
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 mt-2 w-44 bg-slate-900 border border-white/10 rounded-xl shadow-xl">
+                  <button onClick={() => navigate('/settings')} className="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10">Settings</button>
+                  <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/10">Logout</button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -257,12 +323,68 @@ export default function Dashboard() {
                 <p className="text-slate-400 text-sm">Your AI-powered career toolkit is ready.</p>
               </div>
               {role === 'STUDENT' && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                  {stats.map((s,i) => (
-                    <div key={i} className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-4">
-                      <div className="text-2xl">{s.icon}</div><p className="text-white text-xl">{s.value}</p><p className="text-slate-500 text-xs">{s.label}</p>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                  {/* Placement Readiness Score Card */}
+                  <div className="lg:col-span-1 bg-gradient-to-br from-purple-950/40 via-slate-900/60 to-black/85 border border-purple-500/30 rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden group">
+                    <div className="absolute -right-8 -top-8 w-24 h-24 bg-purple-500/10 rounded-full blur-xl group-hover:bg-purple-500/20 transition-all duration-300" />
+                    <div>
+                      <span className="text-purple-400 text-[10px] uppercase font-bold tracking-wider">Overall Status</span>
+                      <h3 className="text-white text-base font-bold mt-1">Placement Readiness</h3>
+                      <p className="text-slate-400 text-[11px] mt-1 leading-relaxed">Aggregated preparedness score based on your profile and test history.</p>
                     </div>
-                  ))}
+                    <div className="my-5 flex items-center justify-center gap-5">
+                      {/* Circular score ring */}
+                      <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
+                        <svg className="w-full h-full transform -rotate-90">
+                          <circle cx="40" cy="40" r="34" className="stroke-white/[0.06]" strokeWidth="6" fill="transparent" />
+                          <circle cx="40" cy="40" r="34" className="stroke-purple-500" strokeWidth="6" fill="transparent"
+                            strokeDasharray={213.6}
+                            strokeDashoffset={213.6 - (213.6 * 76) / 100}
+                            strokeLinecap="round" />
+                        </svg>
+                        <span className="absolute text-white font-bold text-xl">76%</span>
+                      </div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+                          <span className="text-slate-300">ATS Score: 78%</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                          <span className="text-slate-300">AI Interviews: 82%</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                          <span className="text-slate-300">DSA Planner: 65%</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-slate-500 border-t border-white/5 pt-2 text-center">
+                      Aggregated in real-time. Keep improving to level up!
+                    </div>
+                  </div>
+
+                  {/* Standard stats grid */}
+                  <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+                    {stats.map((s,i) => (
+                      <div key={i} className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5 flex flex-col justify-between hover:bg-white/[0.05] transition-all">
+                        <div className="text-3xl">{s.icon}</div>
+                        <div>
+                          <p className="text-white text-2xl font-bold mt-2">{s.value}</p>
+                          <p className="text-slate-400 text-xs mt-1 font-medium">{s.label}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {role === 'RECRUITER' && (
+                <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-6 text-center text-slate-400 py-12">
+                  <p className="text-white text-lg font-semibold mb-2">Recruiter Access Granted</p>
+                  <p className="text-sm">Manage drives, review applications, shortlist candidates and schedule interviews in the portal.</p>
+                  <button onClick={() => setActive('recruiter-portal')} className="mt-4 bg-purple-600 hover:bg-purple-500 text-white text-sm px-6 py-2.5 rounded-xl font-medium transition-all">
+                    Open Recruiter Portal
+                  </button>
                 </div>
               )}
             </>
@@ -557,13 +679,17 @@ export default function Dashboard() {
             <DSAPlanner />
           )}
 
-{active === 'knowledge' && role === 'STUDENT' && (
-             <StudyMaterials />
-           )}
+          {active === 'knowledge' && role === 'STUDENT' && (
+            <StudyMaterials />
+          )}
 
-           {active === 'notes' && role === 'STUDENT' && (
-             <CSNotes />
-           )}
+          {active === 'notes' && role === 'STUDENT' && (
+            <CSNotes />
+          )}
+
+          {active === 'recruiter-portal' && role === 'RECRUITER' && (
+            <RecruiterDashboard />
+          )}
         </main>
       </div>
     </div>

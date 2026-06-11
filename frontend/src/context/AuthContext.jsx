@@ -33,20 +33,23 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  const demoLogin = () => {
-    const demoUser = { id: 1, name: 'Demo User', email: 'demo@resumeai.com' };
+  const demoLogin = (selectedRole = 'STUDENT') => {
+    const demoUser = { 
+      id: selectedRole === 'RECRUITER' ? 2 : selectedRole === 'ADMIN' ? 3 : 1, 
+      name: selectedRole === 'RECRUITER' ? 'Demo Recruiter' : selectedRole === 'ADMIN' ? 'Demo Admin' : 'Demo Student', 
+      email: selectedRole === 'RECRUITER' ? 'recruiter@resumeai.com' : selectedRole === 'ADMIN' ? 'admin@resumeai.com' : 'demo@resumeai.com' 
+    };
     const demoToken = 'demo-token-' + Date.now();
-    const demoRole = 'STUDENT';
     localStorage.setItem('resumeai_token', demoToken);
     localStorage.setItem('resumeai_user', JSON.stringify(demoUser));
-    localStorage.setItem('resumeai_role', demoRole);
+    localStorage.setItem('resumeai_role', selectedRole);
     setToken(demoToken);
     setUser(demoUser);
-    setRole(demoRole);
+    setRole(selectedRole);
   };
 
-  const register = async (name, email, password) => {
-    const data = await authAPI.register(name, email, password);
+  const register = async (name, email, password, role = 'STUDENT') => {
+    const data = await authAPI.register(name, email, password, role);
     return data;
   };
 

@@ -3,13 +3,18 @@ package com.careeros.controller;
 import com.careeros.model.Application;
 import com.careeros.model.Drive;
 import com.careeros.model.Student;
+import com.careeros.model.User;
+import com.careeros.model.Notification;
 import com.careeros.repository.ApplicationRepository;
 import com.careeros.repository.DriveRepository;
 import com.careeros.repository.StudentRepository;
+import com.careeros.repository.UserRepository;
+import com.careeros.repository.NotificationRepository;
 import com.careeros.service.EligibilityEngine;
 import com.careeros.service.ShortlistingAlgorithm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,6 +32,15 @@ public class DriveController {
 
     @Autowired
     private StudentRepository studentRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired(required = false)
+    private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     private EligibilityEngine eligibilityEngine;
@@ -109,6 +123,24 @@ public class DriveController {
             Application app = applications.stream().filter(a -> a.getStudentId().equals(s.getId())).findFirst().orElse(null);
             if (app != null) {
                 applicationRepository.updateStatus(app.getId(), "SHORTLISTED");
+                
+                // Real-time Notification
+                try {
+                    User u = userRepository.findByEmail(s.getEmail());
+                    if (u != null) {
+                        Notification notif = new Notification();
+                        notif.setUserId(u.getId());
+                        notif.setTitle("Congratulations! Shortlisted");
+                        notif.setMessage("You have been shortlisted for the role of " + drive.getRole() + " at " + drive.getCompanyName() + ".");
+                        notif.setType("SHORTLIST");
+                        notificationRepository.save(notif);
+                        if (messagingTemplate != null) {
+                            messagingTemplate.convertAndSend("/topic/notifications/" + u.getId(), notif);
+                        }
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Failed to send shortlist notification: " + ex.getMessage());
+                }
             }
         }
 

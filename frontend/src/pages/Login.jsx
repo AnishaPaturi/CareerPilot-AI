@@ -125,14 +125,23 @@ export default function Login() {
               ) : 'Sign In'}
             </button>
 
-            {/* Demo login */}
-            <button
-              type="button"
-              onClick={() => { demoLogin(); navigate('/dashboard'); }}
-              className="w-full mt-2 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-slate-300 font-medium py-2.5 rounded-xl text-sm transition-all duration-200"
-            >
-              Continue as Demo
-            </button>
+            {/* Demo logins */}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <button
+                type="button"
+                onClick={() => { demoLogin('STUDENT'); navigate('/dashboard'); }}
+                className="bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-slate-300 font-medium py-2.5 rounded-xl text-xs transition-all duration-200"
+              >
+                Demo Student
+              </button>
+              <button
+                type="button"
+                onClick={() => { demoLogin('RECRUITER'); navigate('/dashboard'); }}
+                className="bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-slate-300 font-medium py-2.5 rounded-xl text-xs transition-all duration-200"
+              >
+                Demo Recruiter
+              </button>
+            </div>
           </form>
 
           <p className="text-center text-sm text-slate-500 mt-6">

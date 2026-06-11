@@ -23,6 +23,9 @@ export function InterviewRoom() {
   
   const [showTabWarning, setShowTabWarning] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
+
+  const [isConversationalMode, setIsConversationalMode] = useState(false);
+  const silenceTimeoutRef = useRef(null);
   
   const [transcript, setTranscript] = useState([]);
   const [answers, setAnswers] = useState([]);
@@ -72,6 +75,18 @@ export function InterviewRoom() {
             utterance.voice = englishVoice;
           }
           
+          if (isConversationalMode) {
+            utterance.onend = () => {
+              if (recognition) {
+                try {
+                  recognition.start();
+                  setIsListening(true);
+                  setMicError(null);
+                } catch (e) {}
+              }
+            };
+          }
+          
           window.speechSynthesis.speak(utterance);
         }
       };
@@ -90,7 +105,7 @@ export function InterviewRoom() {
         window.speechSynthesis.cancel();
       }
     };
-  }, [currentQuestionIndex, questions, isTtsEnabled]);
+  }, [currentQuestionIndex, questions, isTtsEnabled, isConversationalMode, recognition]);
 
   // Proctoring detection: Tab visibility change & Window blur (focus loss)
   useEffect(() => {
@@ -198,6 +213,28 @@ export function InterviewRoom() {
     }
   }, []);
 
+  // Silence detector for Conversational Voice Mode
+  useEffect(() => {
+    if (isConversationalMode && isListening && userAnswer.trim().length > 0) {
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+      silenceTimeoutRef.current = setTimeout(() => {
+        if (recognition) {
+          try {
+            recognition.stop();
+          } catch (e) {}
+        }
+        handleSendAnswer();
+      }, 3000); // 3 seconds of silence
+    }
+    return () => {
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+    };
+  }, [userAnswer, isListening, isConversationalMode, recognition]);
+
   const toggleListening = () => {
     if (!recognition) {
       alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
@@ -227,6 +264,10 @@ export function InterviewRoom() {
 
   const handleSendAnswer = () => {
     if (!userAnswer.trim()) return;
+    
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+    }
     
     // Save answer
     const currentQuestionText = questions[currentQuestionIndex]?.question;
@@ -520,6 +561,14 @@ export function InterviewRoom() {
                 title={isTtsEnabled ? "Mute question audio" : "Unmute question audio"}
               >
                 {isTtsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              </button>
+              <button
+                onClick={() => setIsConversationalMode(!isConversationalMode)}
+                className={`p-2 rounded-lg transition-all text-xs font-semibold flex items-center gap-1.5 ${isConversationalMode ? 'bg-purple-600 text-white animate-pulse' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                title="Toggle Hands-Free Voice Mode"
+              >
+                <Mic className="w-4 h-4" />
+                <span>Hands-Free</span>
               </button>
             </div>
             

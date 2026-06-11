@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Signup() {
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', role: 'STUDENT' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -47,7 +47,7 @@ export default function Signup() {
     if (err) { setError(err); return; }
     setLoading(true);
     try {
-      await register(form.name.trim(), form.email.trim(), form.password);
+      await register(form.name.trim(), form.email.trim(), form.password, form.role);
       setSuccess(true);
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
@@ -125,6 +125,19 @@ export default function Signup() {
                     disabled={loading}
                     className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-white placeholder-slate-600 text-sm focus:outline-none focus:border-purple-500/50 focus:bg-white/[0.07] focus:ring-1 focus:ring-purple-500/30 transition-all duration-200 disabled:opacity-50"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-1.5">Register As</label>
+                  <select
+                    value={form.role}
+                    onChange={update('role')}
+                    disabled={loading}
+                    className="w-full bg-slate-900 border border-white/[0.08] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-purple-500/50 focus:bg-white/[0.07] focus:ring-1 focus:ring-purple-500/30 transition-all duration-200 disabled:opacity-50 cursor-pointer"
+                  >
+                    <option value="STUDENT">Student (Prepare & Apply)</option>
+                    <option value="RECRUITER">Recruiter (Post Jobs & Shortlist)</option>
+                  </select>
                 </div>
 
                 <div>

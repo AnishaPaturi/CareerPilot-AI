@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # 1. MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: careeros-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: careeros
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Redis Cache
+  redis:
+    image: redis:7.2-alpine
+    container_name: careeros-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # 3. RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: careeros-rabbitmq
+    ports:
+      - "5672:5672"    # AMQP broker port
+      - "15672:15672"  # Management Web UI Console
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 4. Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    container_name: careeros-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+
+  # 5. FastAPI AI Services
+  ai-services:
+    build:
+      context: ./ai-services
+      dockerfile: Dockerfile
+    container_name: careeros-ai-services
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENROUTER_API_KEY=openrouter/free
+    volumes:
+      - ./ai-services/uploads:/app/uploads
+      - ./ai-services/chroma_db:/app/chroma_db
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # 6. Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: careeros-backend
+    ports:
+      - "9999:9999"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/careeros?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=rootpassword
+      - SPRING_REDIS_HOST=redis
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+      - AI_SERVICE_BASE_URL=http://ai-services:8000/api/ai
+      - OPENROUTER_API_KEY=openrouter/free
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      ai-services:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:
+  rabbitmq_data:
+  es_data:

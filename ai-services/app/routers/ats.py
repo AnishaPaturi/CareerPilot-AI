@@ -910,3 +910,52 @@ async def convert_resume_to_docx(request: DocxConversionRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to generate Word document: {str(e)}")
+
+class CoverLetterRequest(BaseModel):
+    resume_text: str
+    job_description: str
+    company_name: Optional[str] = None
+    role: Optional[str] = None
+
+@router.post("/generate-cover-letter")
+async def generate_cover_letter(request: CoverLetterRequest):
+    prompt = ChatPromptTemplate.from_template("""
+    You are an expert career coach. Write a highly tailored, professional, and compelling cover letter for a candidate based on their resume and the target job description.
+    
+    Candidate Resume Details:
+    {resume_text}
+    
+    Target Job Details:
+    Role: {role}
+    Company: {company_name}
+    Job Description:
+    {job_description}
+    
+    Write a 350-450 word cover letter that highlights the most relevant skills and projects from the resume matching the job requirements. Keep it professional, engaging, and clear. Do not use generic placeholders like [Date] or [Insert Name] at the top; write a complete, drop-in ready letter. Use the candidate's name from their resume if found, otherwise use a placeholder name.
+    """)
+    
+    models = [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "openrouter/free"]
+    last_error = None
+    
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.7,
+                max_retries=1
+            )
+            chain = prompt | llm | StrOutputParser()
+            result = await chain.ainvoke({
+                "resume_text": request.resume_text,
+                "job_description": request.job_description,
+                "role": request.role or "Software Engineer",
+                "company_name": request.company_name or "Target Company"
+            })
+            return {"cover_letter": result}
+        except Exception as e:
+            last_error = e
+            continue
+            
+    return {"cover_letter": "Dear Hiring Manager,\n\nI am writing to express my strong interest in the " + (request.role or "Software Engineer") + " position at " + (request.company_name or "your company") + ". With a strong background in software development and technical problem-solving as outlined in my resume, I am confident in my ability to contribute value to your team.\n\nThank you for your consideration.\n\nSincerely,\nCandidate"}

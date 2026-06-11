@@ -14,11 +14,11 @@ export const authAPI = {
     return data;
   },
 
-  register: async (name, email, password) => {
+  register: async (name, email, password, role = 'STUDENT') => {
     const res = await fetch(`${BASE_URL}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, role }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Registration failed");
@@ -121,10 +121,12 @@ export const drivesAPI = {
     return res.json();
   },
   create: async (driveData) => {
+    // If user is recruiter, companyId could be custom. Set company_id to 1 as default.
+    const payload = { ...driveData, companyId: driveData.companyId || 1 };
     const res = await fetch(`${BASE_URL}/api/drives`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(driveData),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error('Failed to create drive');
     return res.text();
@@ -135,14 +137,35 @@ export const drivesAPI = {
     });
     if (!res.ok) throw new Error('Failed to apply for drive');
     return res.text();
+  },
+  shortlist: async (driveId) => {
+    const res = await fetch(`${BASE_URL}/api/drives/${driveId}/shortlist`, {
+      method: "POST"
+    });
+    if (!res.ok) throw new Error('Failed to run shortlisting');
+    return res.json();
   }
 };
 
 export const applicationsAPI = {
+  getAll: async () => {
+    const res = await fetch(`${BASE_URL}/api/applications`);
+    if (!res.ok) throw new Error('Failed to fetch applications');
+    return res.json();
+  },
   getByStudent: async (studentId) => {
     const res = await fetch(`${BASE_URL}/api/applications/student/${studentId}`);
     if (!res.ok) throw new Error('Failed to fetch applications');
     return res.json();
+  },
+  updateStatus: async (id, status) => {
+    const res = await fetch(`${BASE_URL}/api/applications/${id}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+    if (!res.ok) throw new Error('Failed to update status');
+    return res.text();
   }
 };
 
@@ -265,6 +288,20 @@ export const atsAPI = {
       body: JSON.stringify({ text, mode })
     });
     if (!res.ok) throw new Error('Failed to convert resume to Word document');
+    return res.json();
+  },
+  generateCoverLetter: async (resumeText, jobDescription, companyName, role) => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/ats/generate-cover-letter`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        resume_text: resumeText,
+        job_description: jobDescription,
+        company_name: companyName,
+        role: role
+      })
+    });
+    if (!res.ok) throw new Error('Failed to generate cover letter');
     return res.json();
   }
 };
