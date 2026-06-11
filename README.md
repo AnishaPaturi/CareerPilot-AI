@@ -31,29 +31,13 @@ Designed with a high-performance microservices blueprint, it is built to demonst
 
 The platform uses a decoupled backend design: an enterprise-level Spring Boot gateway that manages relational data and role authentication, alongside a Python FastAPI microservice that drives all LLM, RAG, and vector operations.
 
-```mermaid
-graph TD
-    User([User: Student / Admin / Recruiter]) -->|React SPA| Frontend[Frontend: React + Vite + Tailwind]
-    Frontend -->|HTTP / JSON / JWT| API_Gateway[API Gateway / Spring Boot]
-    
-    subgraph Spring_Boot_Gateway ["Spring Boot Gateway Service (Port 9999)"]
-        API_Gateway --> AuthServ[Auth & Profile Management]
-        API_Gateway --> PlacementServ[Placement Drives & Job Postings]
-        API_Gateway --> ProxyServ[AiController: API Router]
-    end
-    
-    ProxyServ -->|REST Proxy / JSON| FastAPI[AI Core: Python FastAPI (Port 8000)]
-    
-    subgraph Python_FastAPI ["FastAPI AI Services Core"]
-        FastAPI --> ATS[Resume ATS Engine]
-        FastAPI --> RAG[RAG Knowledge Assistant]
-        FastAPI --> Interview[Mock Interview Simulator]
-        FastAPI --> DSA[AlgoMentor DSA Planner]
-    end
-    
-    Spring_Boot_Gateway -->|SQL| MySQL[(MySQL Database)]
-    Python_FastAPI -->|Vector Retrieval| VectorDB[(Chroma Vector DB)]
-```
+![System Architecture](assets/System_architecture.png)
+
+---
+
+## 🔄 System Workflow
+
+![System Workflow](assets/workflow.png)
 
 ---
 
@@ -321,10 +305,4 @@ Anisha Paturi is a computer science undergraduate passionate about full-stack en
 
 The ecosystem was designed, developed, and integrated in structured sprints over a **20-week timeline**:
 
-| Sprints | Phase & Focus Area | Major Milestones Achieved |
-| --- | --- | --- |
-| **Weeks 1 - 4** | **Database & Authentication Backbone** | Designed unified MySQL tables; configured Spring Boot Gateway and JWT security tokens. |
-| **Weeks 5 - 8** | **ATS Resume Engine & Diagnostics** | Built PDF text extraction; created ATS sub-scoring checklists and matching heatmaps; created styled Word (`.docx`) template exporter. |
-| **Weeks 9 - 12**| **AI Mock Interview Arena** | Developed Speech-to-Text dynamic scripts (Web Speech API), camera feed mock panels, and automatic evaluator metrics. |
-| **Weeks 13 - 16**| **Knowledge Base (RAG) & AlgoMentor**| Configured ChromaDB vector stores; added PDF chat, quiz engines, and adaptive DSA study roadmaps. |
-| **Weeks 17 - 20**| **Integration, Testing & Failovers** | Implemented robust local heuristic fallbacks for API rate limits; completed end-to-end user-testing. |
+![Project Development Timeline](assets/Timeline.png)
