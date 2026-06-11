@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Search, CheckCircle, Video, Map as MapIcon, BookOpen, MapPin, ExternalLink, Loader2, Building2 } from 'lucide-react';
-import { drivesAPI, applicationsAPI, atsAPI, jobsAPI } from '../services/api';
+import { drivesAPI, applicationsAPI, atsAPI, jobsAPI, studentsAPI } from '../services/api';
 import AIInterviewSimulator from '../components/AIInterviewSimulator';
 import DSAPlanner from '../components/DSAPlanner';
 import StudyMaterials from '../components/StudyMaterials';
@@ -91,6 +91,8 @@ export default function Dashboard() {
       .finally(() => setLoadingJobs(false));
   }, [active, jobKeyword, jobType]);
 
+  const [autoApplyChecked, setAutoApplyChecked] = useState(false);
+
   const handleAnalyze = async () => {
     if (!selectedFile) { alert("Please select a file first"); return; }
     try {
@@ -100,6 +102,22 @@ export default function Dashboard() {
       if (data && data.error) {
         throw new Error(data.error);
       }
+
+      // Auto-apply logic
+      if (autoApplyChecked && user?.id) {
+        try {
+          const autoResult = await studentsAPI.autoApply(user.id);
+          if (autoResult.success && autoResult.count > 0) {
+            const listStr = autoResult.appliedDrives.map(d => `- ${d.companyName} (${d.role})`).join('\n');
+            alert(`Auto-Applied successfully to ${autoResult.count} eligible drive(s):\n${listStr}`);
+          } else {
+            alert('Analyzed! No new eligible campus drives matched your resume.');
+          }
+        } catch (autoErr) {
+          console.error("Auto-apply error:", autoErr);
+        }
+      }
+
       navigate("/report", { state: { analysis: data } });
     } catch (err) {
       console.error(err);
@@ -505,6 +523,18 @@ export default function Dashboard() {
                   <div className="space-y-3">
                     <p className="text-green-400 font-medium">Selected File:</p>
                     <p className="text-white">{selectedFile.name}</p>
+                    <div className="flex items-center justify-center gap-2 mt-4 mb-2">
+                      <input 
+                        type="checkbox" 
+                        id="autoApply"
+                        checked={autoApplyChecked} 
+                        onChange={e => setAutoApplyChecked(e.target.checked)} 
+                        className="rounded border-white/20 bg-slate-900 text-purple-600 focus:ring-purple-500"
+                      />
+                      <label htmlFor="autoApply" className="text-sm text-slate-300 cursor-pointer select-none">
+                        Automatically apply to matching campus drives after analysis
+                      </label>
+                    </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleAnalyze(); }}
                       disabled={analyzing}
@@ -512,7 +542,7 @@ export default function Dashboard() {
                     >
                       {analyzing ? "Analyzing..." : "Analyze Resume with AI"}
                     </button>
-                    <button onClick={() => setSelectedFile(null)} className="mt-1 text-slate-400 hover:text-white text-sm">Choose a different file</button>
+                    <button onClick={() => setSelectedFile(null)} className="mt-1 text-slate-400 hover:text-white text-sm block mx-auto">Choose a different file</button>
                   </div>
                 )}
               </div>

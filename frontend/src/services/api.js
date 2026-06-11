@@ -172,6 +172,13 @@ export const studentsAPI = {
     const res = await fetch(`${BASE_URL}/api/students`);
     if (!res.ok) throw new Error('Failed to fetch students');
     return res.json();
+  },
+  autoApply: async (studentId) => {
+    const res = await fetch(`${BASE_URL}/api/students/${studentId}/auto-apply`, {
+      method: "POST"
+    });
+    if (!res.ok) throw new Error('Auto-apply failed');
+    return res.json();
   }
 };
 

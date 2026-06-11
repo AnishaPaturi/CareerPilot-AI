@@ -18,6 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import org.springframework.web.multipart.MultipartFile;
+import com.careeros.model.Drive;
+import com.careeros.model.Application;
+import com.careeros.model.ApplicationStatus;
+import com.careeros.repository.DriveRepository;
+import com.careeros.repository.ApplicationRepository;
 
 @RestController
 @RequestMapping("/api/students")
@@ -40,6 +45,12 @@ public class StudentController {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private DriveRepository driveRepository;
+
+    @Autowired
+    private ApplicationRepository applicationRepository;
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody Student student) {
@@ -164,6 +175,108 @@ public class StudentController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    @PostMapping("/{id}/auto-apply")
+    public ResponseEntity<?> autoApply(@PathVariable int id) {
+        Student student = studentRepository.findById(id);
+        if (student == null) {
+            return ResponseEntity.status(404).body(Map.of("success", false, "message", "Student not found"));
+        }
+
+        List<Drive> drives = driveRepository.findAll();
+        List<Application> existing = applicationRepository.findByStudentId(id);
+        
+        List<Map<String, Object>> appliedDrives = new java.util.ArrayList<>();
+
+        for (Drive drive : drives) {
+            // Check if already applied
+            boolean alreadyApplied = existing.stream().anyMatch(a -> a.getDriveId().equals(drive.getId()));
+            if (alreadyApplied) {
+                continue;
+            }
+
+            // Check CGPA
+            if (drive.getMinCgpa() != null && student.getCgpa() != null) {
+                if (student.getCgpa() < drive.getMinCgpa()) {
+                    continue;
+                }
+            }
+
+            // Check Backlogs (must be 0)
+            if (student.getActiveBacklogs() != null && student.getActiveBacklogs() > 0) {
+                continue;
+            }
+
+            // Check Branch
+            String allowedStr = drive.getAllowedBranches();
+            if (allowedStr != null && !allowedStr.isEmpty() && student.getBranch() != null) {
+                String studentBranchUpper = student.getBranch().toUpperCase().trim();
+                boolean branchMatch = allowedStr.toUpperCase().contains("\"" + studentBranchUpper + "\"")
+                                   || allowedStr.toUpperCase().contains("'" + studentBranchUpper + "'")
+                                   || allowedStr.toUpperCase().contains(studentBranchUpper);
+                if (!branchMatch) {
+                    continue;
+                }
+            }
+
+            // Check Skills Fit
+            if (!isSkillsFit(drive.getRole(), student.getSkills())) {
+                continue;
+            }
+
+            // Apply
+            Application app = new Application();
+            app.setDriveId(drive.getId());
+            app.setStudentId(id);
+            app.setStatus(ApplicationStatus.APPLIED);
+            app.setStudentName(student.getName());
+            app.setCompanyName(drive.getCompanyName());
+            app.setRole(drive.getRole());
+
+            applicationRepository.save(app);
+            
+            appliedDrives.add(Map.of(
+                "driveId", drive.getId(),
+                "companyName", drive.getCompanyName(),
+                "role", drive.getRole(),
+                "packageLpa", drive.getPackageLpa() != null ? drive.getPackageLpa() : "N/A"
+            ));
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "appliedDrives", appliedDrives,
+            "count", appliedDrives.size()
+        ));
+    }
+
+    private boolean isSkillsFit(String role, String skills) {
+        if (role == null || skills == null) return true;
+        String r = role.toLowerCase();
+        String s = skills.toLowerCase();
+        
+        if (r.contains("frontend") || r.contains("react") || r.contains("ui") || r.contains("ux")) {
+            return s.contains("react") || s.contains("frontend") || s.contains("javascript") 
+                || s.contains("html") || s.contains("css") || s.contains("typescript") 
+                || s.contains("angular") || s.contains("vue") || s.contains("design");
+        }
+        if (r.contains("backend") || r.contains("java") || r.contains("spring") || r.contains("node")) {
+            return s.contains("java") || s.contains("spring") || s.contains("backend") 
+                || s.contains("node") || s.contains("python") || s.contains("sql") 
+                || s.contains("c++") || s.contains("database") || s.contains("express");
+        }
+        if (r.contains("cloud") || r.contains("devops") || r.contains("aws") || r.contains("azure")) {
+            return s.contains("aws") || s.contains("docker") || s.contains("kubernetes") 
+                || s.contains("devops") || s.contains("cloud") || s.contains("terraform") 
+                || s.contains("linux") || s.contains("azure");
+        }
+        if (r.contains("data") || r.contains("analyst") || r.contains("machine learning") || r.contains("ml") || r.contains("ai")) {
+            return s.contains("python") || s.contains("data") || s.contains("analyst") 
+                || s.contains("machine learning") || s.contains("ml") || s.contains("sql") 
+                || s.contains("pandas") || s.contains("model") || s.contains("ai");
+        }
+        return true;
     }
 }
 
