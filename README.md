@@ -210,32 +210,57 @@ erDiagram
 ## 🌟 Core Modules & Features
 
 ### 1. Smart Placement Management Backbone
-* **Student Dashboard**: View personal CGPA eligibility, active job applications, and recommended campus drives.
-* **Admin Controls**: Manage campus postings, company requirements, student backlogs, and review real-time placement funnel funnels.
-* **Job Board**: Query local postings and search live external job listings (filtered to India) powered by the JSearch API.
+The central system coordinating all placement drives, company profiles, job application funnels, and student credentials.
+* **Student Placement Center**: Displays active, eligible campus drives based on real-time qualification filters (checks CGPA cutoffs and branch exclusions). Track active applications across sequential hiring stages.
+* **Admin Control Center**: Allows administrators to register partner companies, publish job listings, customize drive parameters, manage backlog status limits, and analyze placement funnel metrics.
+* **Live Job Board Feed**: Features a client-side integrated search engine powered by [CareerNestClient.java](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/java/com/careeros/service/careernest/CareerNestClient.java) that queries the live `https://careernest.cloud/api/feed` endpoint (exclusively targeting India opportunities), featuring in-memory caching to avoid upstream rate limits.
+* **Application Lifecycle Tracker**: Transitions application records through a structured lifecycle: `APPLIED` ➔ `SHORTLISTED` ➔ `TEST` ➔ `INTERVIEW` ➔ `SELECTED` ➔ `REJECTED`.
+* **Database Mapping**: Synchronizes placement models like [Drive.java](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/java/com/careeros/model/Drive.java) and [Application.java](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/java/com/careeros/model/Application.java) via the Spring Boot JPA layer into MySQL according to rules seeded by [schema.sql](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/resources/schema.sql).
+
+> [!NOTE]
+> All student data, active backlogs, CGPA benchmarks, and drive details are managed strictly under roles `STUDENT` and `ADMIN` using Spring Security's unified JWT token authentication filters.
+
+---
 
 ### 2. AI Resume ATS Auditor
-* **ATS Score Meter**: Evaluates resumes in real time, scoring overall rating, content relevance, format readability, and keyword density.
-* **Visual Audit Checklist**: Displays clear indicators (Passed ✅ / Warning ⚠️ / Critical ❌) checklisting formatting compatibility, email/phone header parameters, and standard layout sections.
-* **Target Gap Analysis**: Displays a keyword match heatmap comparing user resume skills against industry standards, highlighting critical missing tools.
-* **Interactive Section Rewriter**: Rewrites weak bullets (e.g. *"I worked on a Java site"*) into impact-driven sentences using action verbs and the STAR methodology (e.g. *"Architected and deployed a scalable Java microservice, reducing response times by 30%"*).
-* **Resume Chatbot (Career GPT)**: Conversational RAG assistant to answer resume questions, suggest phrasing, and offer template adjustments.
-* **Professional DOCX Exporter**: Converts parsed resumes into formatted Microsoft Word (`.docx`) files with modern design elements, layout tables, and styled border lines.
-* **Local Heuristic Fallback Engine**: If OpenRouter free tier keys hit daily rate limits, the FastAPI backend automatically triggers an offline regex parser. It evaluates contact headers, counts metrics, identifies standard skills, and outputs a realistic diagnostic scorecard.
+An advanced parsing and scorecard suite matching candidates' resumes against candidate ATS (Applicant Tracking System) benchmarks.
+* **Real-time ATS Score Meter**: Interacts with the FastAPI Python services to pass PDF/text contents through a parser chain. Evaluates overall formatting, keyword density, section placement, and impact-driven phrasing to yield a total score out of 100.
+* **Visual Audit Checklist**: Employs interactive checklist metrics rendering diagnostics:
+  * **Passed ✅**: Presence of clear email/phone contact headers, readable plain-text layouts, and standard sections.
+  * **Warning ⚠️**: Excessive abbreviations, lack of quantitative results, or poorly defined experience timelines.
+  * **Critical ❌**: Missing critical skill blocks, unparseable graphics, or empty/insufficient content details.
+* **STAR Methodology Rewriter**: Takes basic project/work summaries (e.g. *"wrote code in Java"*) and uses context-aware prompt templates to transform them into high-impact, metrics-driven STAR bullets (e.g., *"Architected and deployed a highly concurrent Java-based REST service, optimizing throughput and lowering API response latency by 30%"*).
+* **Skills Gap Heatmap**: Compares extracted skill lists against target job requirements, highlighting missing technologies or frameworks.
+* **Career GPT Conversational Assistant**: Allows students to chat directly with their resume context to brainstorm custom action verbs, verify grammar, or identify industry terms.
+* **Modern DOCX Exporter**: Dynamically structures the parsed resume JSON schema into a professionally styled, ATS-friendly Microsoft Word (`.docx`) file with structured borders, table spacing, and standardized layouts.
+* **Heuristic Offline Parser**: A custom regex backup module inside [ats.py](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/ai-services/app/routers/ats.py) that processes files locally when OpenRouter API rate limits are reached, scanning for structural components and providing a realistic baseline report.
+
+---
 
 ### 3. AI Mock Interview Arena
-* **Custom Round Selection**: Select target roles, topics (system design, coding, general, behavioral), experience limits, and specific tech stacks.
-* **Interviewer Simulator**: Dynamic text and voice interview environment powered by the browser's Web Speech API. Includes a simulated recording display and user camera preview to prepare candidates for live webcam settings.
-* **Smart Evaluation Report**: Scores sessions based on technical accuracy, language flow, and confidence, outputting constructive weaknesses and improvement steps.
+An immersive interview simulation environment allowing students to practice and self-evaluate.
+* **Custom Configuration Panel**: Customizes interviews based on:
+  * **Role Type**: Technical (Frontend, Backend, Fullstack, DevOps, ML) or General (HR, Behavioral).
+  * **Tech Stack**: Specify targets like Java Spring Boot, React, Python, or Kubernetes.
+  * **Experience Tier**: Configurable from Entry-Level (College grad) to Senior Architect.
+* **AI Interviewer Simulator**: Alternates speaking and listening rounds, using the browser's native **Web Speech API** for voice-to-text input. Provides live audio recording indicators and an optional user webcam display to help candidates practice maintaining eye contact and managing posture.
+* **Detailed Session Evaluation**: Rates user answers against reference guidelines. Yields an interactive feedback report highlighting overall score, technical accuracy, grammatical fluency, and a step-by-step roadmap. Mapped to the database via [MockInterview.java](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/java/com/careeros/model/MockInterview.java).
+
+---
 
 ### 4. AlgoMentor DSA Planner
-* **Dynamic Roadmaps**: Generates custom roadmaps matching target timelines, skill levels, and target tier companies (FAANG, product, service).
-* **Milestone Progress**: Tracks daily challenges, solves progress, and registers confidence levels.
+An agentic roadmap planner to streamline coding interview preparation.
+* **Personalized Daily Roadmaps**: Formulates day-by-day practice schedules based on time available, current confidence, and target company standards (e.g., Tier-1 FAANG, Tier-2 Product, Tier-3 Service). Mapped via [DsaRoadmap.java](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/java/com/careeros/model/DsaRoadmap.java).
+* **Topic Progress & Confidence Logger**: Logs completed problems across standard categories (Arrays, Graphs, Dynamic Programming) with difficulty levels (`EASY`, `MEDIUM`, `HARD`), linking directly to LeetCode reference tags. Saves progress metrics in [DsaProgress.java](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/java/com/careeros/model/DsaProgress.java) to highlight topics needing review.
+
+---
 
 ### 5. Career Knowledge Assistant (Document RAG)
-* **Study RAG Chatbot**: Upload prep notes, PDFs, or slides. Students can query complex concepts and get verified replies citing their files.
-* **Auto-Summarizer**: Generates single-page summaries and flashcards from large documents.
-* **Quiz Generator**: Builds auto-generated testing modules to evaluate conceptual understanding.
+A personal academic assistant that allows students to query notes, PDFs, or books.
+* **ChromaDB Vector Store**: Converts uploaded PDF study materials into semantic vector embeddings stored in a local vector directory. Mapped on the backend via [Document.java](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/java/com/careeros/model/Document.java).
+* **Context-Aware Semantic Chat**: Uses retrieval-augmented generation (RAG) to query uploaded files and produce conceptual answers backed by actual text references, with chat query history logged in [QueryLog.java](file:///C:/Users/anish/OneDrive/College/Projects/AI-CareerOS/backend/src/main/java/com/careeros/model/QueryLog.java).
+* **Conceptual Quizzing Engine**: Scans notes and dynamically compiles multi-choice quizzes to test student comprehension.
+* **Smart Summarizer**: Generates single-page summaries and flashcard decks to help candidates study before placement tests.
 
 ---
 

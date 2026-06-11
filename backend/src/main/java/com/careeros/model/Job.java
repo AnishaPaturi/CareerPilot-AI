@@ -11,74 +11,57 @@ public class Job {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(name = "company_id")
+    private Integer companyId;
+
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false)
-    private String company;
-
-    @Column(nullable = false)
     private String location;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    private String source;
-
-    @Column(name = "source_id")
-    private String sourceId;
-
-    @Column(name = "job_type")
+    @Column(name = "job_type", length = 50)
     private String jobType;
 
+    @Column(columnDefinition = "json")
     private String keywords;
 
+    @Column(length = 500)
     private String url;
+
+    @Column(length = 50)
+    private String source = "internal";
 
     @Column(name = "posted_date")
     private LocalDateTime postedDate;
 
-    @Column(name = "fetched_at")
-    private LocalDateTime fetchedAt;
+    @Column(name = "min_cgpa", precision = 3, scale = 2)
+    private Double minCgpa;
+
+    @Column(name = "allowed_branches", columnDefinition = "json")
+    private String allowedBranches;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     public Job() {}
-
-    public Job(String title, String company, String location, String description, 
-               String source, String sourceId, String jobType, String keywords, 
-               String url, LocalDateTime postedDate) {
-        this.title = title;
-        this.company = company;
-        this.location = location;
-        this.description = description;
-        this.source = source;
-        this.sourceId = sourceId;
-        this.jobType = jobType;
-        this.keywords = keywords;
-        this.url = url;
-        this.postedDate = postedDate;
-        this.fetchedAt = LocalDateTime.now();
-    }
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
 
+    public Integer getCompanyId() { return companyId; }
+    public void setCompanyId(Integer companyId) { this.companyId = companyId; }
+
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
-
-    public String getCompany() { return company; }
-    public void setCompany(String company) { this.company = company; }
 
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-
-    public String getSource() { return source; }
-    public void setSource(String source) { this.source = source; }
-
-    public String getSourceId() { return sourceId; }
-    public void setSourceId(String sourceId) { this.sourceId = sourceId; }
 
     public String getJobType() { return jobType; }
     public void setJobType(String jobType) { this.jobType = jobType; }
@@ -89,9 +72,18 @@ public class Job {
     public String getUrl() { return url; }
     public void setUrl(String url) { this.url = url; }
 
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
+
     public LocalDateTime getPostedDate() { return postedDate; }
     public void setPostedDate(LocalDateTime postedDate) { this.postedDate = postedDate; }
 
-    public LocalDateTime getFetchedAt() { return fetchedAt; }
-    public void setFetchedAt(LocalDateTime fetchedAt) { this.fetchedAt = fetchedAt; }
+    public Double getMinCgpa() { return minCgpa; }
+    public void setMinCgpa(Double minCgpa) { this.minCgpa = minCgpa; }
+
+    public String getAllowedBranches() { return allowedBranches; }
+    public void setAllowedBranches(String allowedBranches) { this.allowedBranches = allowedBranches; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }
