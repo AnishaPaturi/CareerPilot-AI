@@ -29,6 +29,8 @@ export function InterviewRoom() {
   const [recognition, setRecognition] = useState(null);
   const videoRef = useRef(null);
   const [stream, setStream] = useState(null);
+  const [cameraError, setCameraError] = useState(null);
+  const [micError, setMicError] = useState(null);
 
   // Load questions from current session
   useEffect(() => {
@@ -126,6 +128,7 @@ export function InterviewRoom() {
   useEffect(() => {
     async function enableStream() {
       try {
+        setCameraError(null);
         const userStream = await navigator.mediaDevices.getUserMedia({
           video: { width: 640, height: 480 },
           audio: false
@@ -136,6 +139,7 @@ export function InterviewRoom() {
         }
       } catch (err) {
         console.error("Failed to get webcam stream:", err);
+        setCameraError(err.name === 'NotAllowedError' ? 'Permission denied' : err.message);
       }
     }
 
@@ -174,6 +178,11 @@ export function InterviewRoom() {
       
       rec.onerror = (event) => {
         console.error("Speech recognition error:", event.error);
+        if (event.error === 'not-allowed') {
+          setMicError('Permission denied');
+        } else {
+          setMicError(event.error);
+        }
         setIsListening(false);
       };
       
@@ -195,6 +204,7 @@ export function InterviewRoom() {
       recognition.stop();
       setIsListening(false);
     } else {
+      setMicError(null);
       setIsListening(true);
       recognition.start();
     }
@@ -396,7 +406,15 @@ export function InterviewRoom() {
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 min-h-[250px]">
           {/* User Video Feed */}
           <div className="relative bg-slate-950 border border-purple-500/10 rounded-xl overflow-hidden flex items-center justify-center">
-            {isCameraOn ? (
+            {cameraError ? (
+              <div className="text-center text-red-400 p-4">
+                <AlertTriangle className="w-10 h-10 mx-auto mb-2 text-yellow-500 animate-pulse" />
+                <p className="text-sm font-semibold">Webcam Blocked</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Please click the camera icon in your browser's address bar and select "Allow" to enable your camera.
+                </p>
+              </div>
+            ) : isCameraOn ? (
               <video
                 ref={videoRef}
                 autoPlay
@@ -433,6 +451,16 @@ export function InterviewRoom() {
 
         {/* Input Bar */}
         <div className="bg-slate-950 border-t border-purple-500/10 p-4">
+          {micError && (
+            <div className="flex items-center gap-2 text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-3 py-2 rounded-lg mb-3 text-xs">
+              <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+              <span>
+                {micError === 'Permission denied' 
+                  ? 'Microphone permission blocked. Please allow microphone access in your browser address bar to use voice-to-text.' 
+                  : `Microphone error: ${micError}. Please check your audio settings.`}
+              </span>
+            </div>
+          )}
           <div className="flex gap-2">
             <input
               type="text"

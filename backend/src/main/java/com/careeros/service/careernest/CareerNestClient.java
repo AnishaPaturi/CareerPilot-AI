@@ -75,10 +75,15 @@ public class CareerNestClient {
                 url.append("&type=").append(java.net.URLEncoder.encode(jobType, "UTF-8"));
 
             String response = restTemplate.getForObject(url.toString(), String.class);
-            return parseAndFilter(response, keyword, jobType, limit, cacheKey);
+            List<Map<String, Object>> result = parseAndFilter(response, keyword, jobType, limit, cacheKey);
+            if (result == null || result.isEmpty()) {
+                return getMockJobs(keyword, jobType, limit);
+            }
+            return result;
 
         } catch (Exception e) {
-            return Collections.emptyList();
+            System.err.println("CareerNest external API unavailable, loading mock jobs: " + e.getMessage());
+            return getMockJobs(keyword, jobType, limit);
         }
     }
 
@@ -179,6 +184,46 @@ public class CareerNestClient {
         if (text == null) return "";
         text = text.replaceAll("<[^>]*>", "").replaceAll("\\s+", " ").trim();
         return text.length() > max ? text.substring(0, max) + "…" : text;
+    }
+
+    private List<Map<String, Object>> getMockJobs(String keyword, String jobType, int limit) {
+        List<Map<String, Object>> mockList = new ArrayList<>();
+        
+        mockList.add(createMockJob("1", "Software Engineer - React/Node", "Google", "https://logo.clearbit.com/google.com", "Bengaluru, India", "Full-time", "Engineering", "Build scalable web applications using React, Node.js, and TypeScript. Collaborate with cross-functional product teams.", "24 LPA", "https://careers.google.com", "https://careers.google.com", "2026-06-10"));
+        mockList.add(createMockJob("2", "Frontend Developer", "Microsoft", "https://logo.clearbit.com/microsoft.com", "Hyderabad, India", "Full-time", "Engineering", "Develop user-facing features and modular web UI components using React, Redux, and modern CSS frameworks.", "18 LPA", "https://careers.microsoft.com", "https://careers.microsoft.com", "2026-06-09"));
+        mockList.add(createMockJob("3", "Backend Developer (Java/Spring Boot)", "Amazon", "https://logo.clearbit.com/amazon.com", "Bengaluru, India", "Full-time", "Engineering", "Design and maintain high-performance microservices using Spring Boot, MySQL, Redis, and AWS. Optimize API query speeds.", "20 LPA", "https://aws.amazon.com/careers", "https://aws.amazon.com/careers", "2026-06-08"));
+        mockList.add(createMockJob("4", "Full Stack Developer", "Walmart", "https://logo.clearbit.com/walmart.com", "Bengaluru, India", "Full-time", "Engineering", "Work on both frontend interfaces (React) and backend services (Java) for the core global e-commerce checkout systems.", "16 LPA", "https://careers.walmart.com", "https://careers.walmart.com", "2026-06-07"));
+        mockList.add(createMockJob("5", "Data Scientist", "Infosys", "https://logo.clearbit.com/infosys.com", "Pune, India", "Full-time", "Data", "Build ML models and analytical pipelines to solve business challenges. Experience in Python, SQL, and Pandas.", "12 LPA", "https://www.infosys.com/careers", "https://www.infosys.com/careers", "2026-06-06"));
+        mockList.add(createMockJob("6", "Cloud Engineer (AWS)", "Amazon Web Services", "https://logo.clearbit.com/aws.amazon.com", "Hyderabad, India", "Full-time", "Cloud", "Manage cloud infrastructure deployment pipelines, Terraform scripts, and CI/CD workflows on AWS servers.", "22 LPA", "https://aws.amazon.com/careers", "https://aws.amazon.com/careers", "2026-06-05"));
+        mockList.add(createMockJob("7", "Machine Learning Engineer", "Google", "https://logo.clearbit.com/google.com", "Bengaluru, India", "Full-time", "AI/ML", "Train, optimize, and deploy LLMs and deep learning models for next-generation AI assistant features.", "35 LPA", "https://careers.google.com", "https://careers.google.com", "2026-06-04"));
+        mockList.add(createMockJob("8", "DevOps Specialist", "TCS", "https://logo.clearbit.com/tcs.com", "Mumbai, India", "Full-time", "DevOps", "Maintain build/release pipelines using Docker, Kubernetes, Jenkins, and shell scripts. Improve infrastructure uptime.", "10 LPA", "https://www.tcs.com/careers", "https://www.tcs.com/careers", "2026-06-03"));
+        mockList.add(createMockJob("9", "React Native Developer", "TCS", "https://logo.clearbit.com/tcs.com", "Bengaluru, India", "Full-time", "Mobile", "Design and develop high-performance cross-platform Android and iOS apps using React Native.", "9 LPA", "https://www.tcs.com/careers", "https://www.tcs.com/careers", "2026-06-02"));
+        mockList.add(createMockJob("10", "UI/UX Designer", "Infosys", "https://logo.clearbit.com/infosys.com", "Bengaluru, India", "Full-time", "Design", "Create interactive prototypes, wireframes, and premium UI designs using Figma and CSS/HTML modules.", "8 LPA", "https://www.infosys.com/careers", "https://www.infosys.com/careers", "2026-06-01"));
+
+        return mockList.stream()
+                .filter(job -> matchesFilters(job, keyword, jobType))
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+
+    private Map<String, Object> createMockJob(String id, String title, String company, String logo, String location, String type, String category, String desc, String salary, String url, String applyUrl, String postedAt) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("external_id",   id);
+        m.put("title",         title);
+        m.put("company",       company);
+        m.put("company_logo",  logo);
+        m.put("location",      location);
+        m.put("job_type",      type);
+        m.put("category",      category);
+        m.put("description",   desc);
+        m.put("salary",        salary);
+        m.put("job_url",       url);
+        m.put("apply_url",     applyUrl);
+        m.put("posted_at",     postedAt);
+        m.put("companyName",   company);
+        m.put("packageLpa",    salary);
+        m.put("source",        "Local Fallback (Active)");
+        return m;
     }
 
     // ─── error handler that silently absorbs non-2xx responses ───────
