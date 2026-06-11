@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, Trash2 } from 'lucide-react';
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:9999";
+
 export default function NotesView() {
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState('');
@@ -8,7 +10,7 @@ export default function NotesView() {
 
   const fetchNotes = async () => {
     try {
-      const res = await fetch('http://localhost:9999/api/ai/knowledge/notes');
+      const res = await fetch(`${BASE_URL}/api/ai/knowledge/notes`);
       if (res.ok) {
         const data = await res.json();
         setNotes(data.notes || []);
@@ -26,7 +28,7 @@ export default function NotesView() {
     if (!newNote.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:9999/api/ai/knowledge/notes', {
+      const res = await fetch(`${BASE_URL}/api/ai/knowledge/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newNote, document_id: 1 })
@@ -44,7 +46,7 @@ export default function NotesView() {
 
   const deleteNote = async (id) => {
     try {
-      await fetch(`http://localhost:9999/api/ai/knowledge/notes/${id}`, {
+      await fetch(`${BASE_URL}/api/ai/knowledge/notes/${id}`, {
         method: 'DELETE'
       });
       fetchNotes();

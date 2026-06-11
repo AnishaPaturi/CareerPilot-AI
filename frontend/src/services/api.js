@@ -1,5 +1,5 @@
-const BASE_URL = "http://localhost:9999";
-const AI_BASE_URL = "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:9999";
+const AI_BASE_URL = import.meta.env.VITE_AI_BASE_URL_DIRECT || "http://localhost:8000";
 
 export { AI_BASE_URL };
 
@@ -187,7 +187,7 @@ export const jobsAPI = {
     if (keyword)  params.set('keyword', keyword);
     if (type)     params.set('type', type);
     params.set('limit', String(limit));
-    const res = await fetch(`http://localhost:9999/api/jobs?${params.toString()}`);
+    const res = await fetch(`${BASE_URL}/api/jobs?${params.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch jobs');
     return res.json();
   },

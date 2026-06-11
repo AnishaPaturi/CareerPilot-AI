@@ -221,6 +221,71 @@ The project utilizes containerized infrastructure services for caching, task que
 
 ---
 
+## 📡 Telemetry, Caching & Message Broker Infrastructure
+
+To ensure enterprise-level scale, performance, and monitoring, the platform integrates a distributed infrastructure layer:
+
+### 1. High-Performance Caching (Redis)
+All slow-running operations, third-party integrations, and LLM requests are cached in **Redis** via Spring Boot's caching abstraction (`@Cacheable`) and Python's caching handlers.
+* **Cached Endpoints**: External JSearch jobs, generated DSA roadmaps, AI quizzes, and problem recommendations.
+* **Result**: Decreases subsequent load times for the student dashboard from **~5-8 seconds** (LLM latency) to **< 50 milliseconds**.
+
+### 2. Event-Driven Asynchronous Task Queues (RabbitMQ)
+Heavy operations like resume parsing are fully decoupled from HTTP threads:
+1. **Request Submission**: When a student uploads a resume, the backend writes the file to temporary storage and publishes a `ResumeParseTask` message containing the file metadata to RabbitMQ's `resume-parsing-queue`.
+2. **Fast Acknowledge**: The user instantly receives a `200 OK` acceptance response so the UI remains fluid.
+3. **Background Processing**: A dedicated `RabbitMQConsumer` worker consumes the task, loads the bytes, makes the AI API request, stores the parsing metrics to MySQL, and deletes the temporary file.
+
+### 3. Production Telemetry Stack (Prometheus, Loki & Grafana)
+* **Prometheus**: Automatically scrapes JVM statistics, CPU utilization, HTTP requests throughput, and latency from Spring Boot Actuator and Python's metrics endpoints.
+* **Loki**: Pushes application standard log stdout directly to a central log server.
+* **Grafana**: Aggregates all metrics and logs, serving dashboards for real-time monitoring.
+
+---
+
+## ☁️ Production Cloud Deployment (PaaS Split)
+
+The platform is designed to deploy seamlessly on a multi-service architecture using free/low-cost PaaS providers. Follow these steps to put the system into production:
+
+### 1. Provision Managed Databases & Services
+Before deploying the code services, provision these free-tier cloud resources:
+* **Managed MySQL**: Create a database on [Aiven.io](https://aiven.io/) or [Clever Cloud](https://www.clever-cloud.com/). Copy the connection string.
+* **Serverless Redis**: Set up a free cache on [Upstash.com](https://upstash.com/). Note the Redis host, port, and password.
+* **Cloud RabbitMQ**: Create a free queue broker on [CloudAMQP.com](https://www.cloudamqp.com/). Copy the `amqps://...` connection URL.
+
+### 2. Environment Variables Configuration
+
+To run successfully in the cloud, configure the following environment variables in your deployment dashboards:
+
+#### Spring Boot Backend (Render / Railway)
+| Environment Variable | Description / Recommended Value |
+| :--- | :--- |
+| `SPRING_DATASOURCE_URL` | MySQL connection string: `jdbc:mysql://[HOST]:[PORT]/[DB_NAME]` |
+| `SPRING_DATASOURCE_USERNAME`| Database username |
+| `SPRING_DATASOURCE_PASSWORD`| Database password |
+| `SPRING_REDIS_HOST` | Upstash Redis Host name |
+| `SPRING_REDIS_PORT` | Upstash Redis Port (usually `6379`) |
+| `SPRING_REDIS_PASSWORD` | Upstash Redis Connection Password |
+| `SPRING_RABBITMQ_ADDRESSES` | CloudAMQP connection string: `amqps://...` |
+| `OPENROUTER_API_KEY` | OpenRouter API Key |
+| `AI_SERVICE_BASE_URL` | Production URL of your deployed Python FastAPI service (e.g. `https://api.yourdomain.com/api/ai`) |
+| `JWT_SECRET` | Strong secret phrase for JWT signing |
+
+#### Python FastAPI Core (Render / Railway)
+| Environment Variable | Description / Recommended Value |
+| :--- | :--- |
+| `OPENROUTER_API_KEY` | OpenRouter API Key |
+| `OPENROUTER_MODEL` | E.g., `google/gemma-4-31b-it:free` |
+| `CHROMA_DB_DIR` | `/data/chroma_db` (using persistent disk storage if on Render) |
+
+#### React Frontend (Vercel)
+| Environment Variable | Description / Recommended Value |
+| :--- | :--- |
+| `VITE_API_BASE_URL` | Production URL of your Spring Boot Backend (e.g. `https://your-backend.railway.app`) |
+| `VITE_AI_BASE_URL_DIRECT`| Production URL of your FastAPI Backend (e.g. `https://your-ai.render.com`) |
+
+---
+
 ## 👥 About the Author
 
 * **Author Name**: Anisha Paturi

@@ -1,6 +1,7 @@
 package com.careeros.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
@@ -20,7 +21,9 @@ public class AiService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String FASTAPI_BASE_URL = "http://localhost:8000/api/ai";
+
+    @Value("${ai.service.base-url}")
+    private String FASTAPI_BASE_URL;
 
     public Map<String, Object> parseResumeForProfile(MultipartFile file) {
         try {
