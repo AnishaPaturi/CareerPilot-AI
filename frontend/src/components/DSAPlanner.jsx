@@ -84,7 +84,9 @@ export default function DSAPlanner() {
               <div key={idx} className="bg-slate-800/50 border border-slate-700 p-6 rounded-xl flex flex-col md:flex-row gap-6">
                 <div className="min-w-[120px] text-center bg-slate-900 rounded-lg p-4 flex flex-col justify-center">
                   <span className="text-sm text-slate-400 uppercase tracking-wider font-bold">Day {goal.day}</span>
-                  <span className="text-xl font-bold text-blue-400 mt-1">{goal.estimated_time}h</span>
+                  <span className="text-xl font-bold text-blue-400 mt-1">
+                    {goal.estimated_time >= 10 ? `${Math.round((goal.estimated_time / 60) * 10) / 10}h` : `${goal.estimated_time}h`}
+                  </span>
                 </div>
                 <div className="flex-1">
                   <h4 className="text-lg font-bold text-slate-200 mb-3">{goal.topic}</h4>

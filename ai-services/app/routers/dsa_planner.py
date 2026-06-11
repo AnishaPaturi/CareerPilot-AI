@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 import os
 from langchain_openai import ChatOpenAI
@@ -23,8 +23,8 @@ class DailyGoal(BaseModel):
     day: int
     date: str
     topic: str
-    problems: List[str]
-    estimated_time: int
+    problems: List[str] = Field(description="List of LeetCode problems, each including its question number (e.g., '#1 Two Sum (Easy)' or '#217 Contains Duplicate (Easy)')")
+    estimated_time: int = Field(description="Estimated time to complete the daily goal in hours (e.g., 2)")
 
 class DSARoadmap(BaseModel):
     title: str
@@ -54,6 +54,8 @@ async def generate_dsa_roadmap(request: RoadmapRequest):
     - Weak areas: {weak_areas}
     
     Focus on LeetCode-style problems with progression from easy to hard.
+    For each problem in the list, you MUST include the LeetCode question number (e.g., "#1 Two Sum (Easy)").
+    The estimated_time for each daily goal MUST be in hours, matching the user's available time per day ({time_available} hours).
     
     {format_instructions}
     """)
