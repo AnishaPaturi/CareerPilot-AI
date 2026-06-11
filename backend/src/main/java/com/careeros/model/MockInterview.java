@@ -27,7 +27,7 @@ public class MockInterview {
     @Column(columnDefinition = "json")
     private String feedback;
 
-    @Column(name = "overall_score", precision = 4, scale = 2)
+    @Column(name = "overall_score")
     private Double overallScore;
 
     @Column(name = "created_at", insertable = false, updatable = false)

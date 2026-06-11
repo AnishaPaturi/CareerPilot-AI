@@ -37,7 +37,7 @@ public class Job {
     @Column(name = "posted_date")
     private LocalDateTime postedDate;
 
-    @Column(name = "min_cgpa", precision = 3, scale = 2)
+    @Column(name = "min_cgpa")
     private Double minCgpa;
 
     @Column(name = "allowed_branches", columnDefinition = "json")
