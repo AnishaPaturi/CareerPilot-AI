@@ -3,11 +3,10 @@ from pydantic import BaseModel
 from typing import List, Optional
 import os
 import json
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -41,9 +40,10 @@ HIGHLIGHTS_STORE = {}
 DOC_COUNTER = 0
 
 def get_embeddings():
-    return HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        encode_kwargs={"normalize_embeddings": True}
+    return OpenAIEmbeddings(
+        api_key=settings.OPENROUTER_API_KEY,
+        base_url="https://openrouter.ai/api/v1",
+        model="openai/text-embedding-3-small"
     )
 
 def get_vector_store(user_id: int):
