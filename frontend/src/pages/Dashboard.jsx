@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Search, CheckCircle, Video, Map as MapIcon, BookOpen, MapPin, ExternalLink, Loader2, Building2 } from 'lucide-react';
-import { drivesAPI, applicationsAPI, atsAPI, jobsAPI, studentsAPI } from '../services/api';
+import { drivesAPI, applicationsAPI, atsAPI, jobsAPI, studentsAPI, mockInterviewAPI } from '../services/api';
 import AIInterviewSimulator from '../components/AIInterviewSimulator';
 import DSAPlanner from '../components/DSAPlanner';
 import StudyMaterials from '../components/StudyMaterials';

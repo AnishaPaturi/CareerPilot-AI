@@ -2,29 +2,13 @@ import { useInterview } from '../../context/InterviewContext';
 import { TrendingUp, Target, Award, Zap, Calendar } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const performanceData = [
-  { date: 'Mar 1', score: 65 },
-  { date: 'Mar 5', score: 70 },
-  { date: 'Mar 8', score: 75 },
-  { date: 'Mar 10', score: 78 },
-  { date: 'Mar 12', score: 82 },
-  { date: 'Mar 15', score: 85 },
-];
+const ChartPlaceholder = ({ message }) => (
+  <div className="w-full h-full flex flex-col items-center justify-center bg-white/[0.02] border border-dashed border-white/[0.08] rounded-xl text-slate-500 text-sm p-6">
+    <span className="text-2xl">📊</span>
+    <span className="mt-2 text-xs text-center">{message || 'No data available yet'}</span>
+  </div>
+);
 
-const pointsData = [
-  { date: 'Week 1', points: 100 },
-  { date: 'Week 2', points: 180 },
-  { date: 'Week 3', points: 280 },
-  { date: 'Week 4', points: 450 },
-];
-
-const topicMasteryData = [
-  { topic: 'Algorithms', score: 85 },
-  { topic: 'System Design', score: 75 },
-  { topic: 'ML/AI', score: 68 },
-  { topic: 'Networking', score: 80 },
-  { topic: 'Databases', score: 72 },
-];
 
 export function InterviewDashboard() {
   const { user, interviews, badges, setInterviewTab, students } = useInterview();
@@ -34,7 +18,41 @@ export function InterviewDashboard() {
   const totalInterviews = interviews.length;
   const avgAccuracy = interviews.length > 0
     ? Math.round(interviews.reduce((sum, i) => sum + i.accuracy, 0) / interviews.length)
-    : 84;
+    : 0;
+
+  // Dynamic charts data
+  const dynamicPerformanceData = [...interviews]
+    .reverse() // oldest first
+    .map(i => ({
+      date: i.date ? new Date(i.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '',
+      score: i.accuracy || 0
+    }));
+
+  let runningPoints = 0;
+  const dynamicPointsData = [...interviews]
+    .reverse()
+    .map(i => {
+      runningPoints += i.pointsEarned || 0;
+      return {
+        date: i.date ? new Date(i.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '',
+        points: runningPoints
+      };
+    });
+
+  const topicCounts = {};
+  interviews.forEach(i => {
+    const topic = i.topic || 'Technical';
+    if (!topicCounts[topic]) {
+      topicCounts[topic] = { sum: 0, count: 0 };
+    }
+    topicCounts[topic].sum += i.accuracy || 0;
+    topicCounts[topic].count += 1;
+  });
+  const dynamicTopicMasteryData = Object.keys(topicCounts).map(topic => ({
+    topic,
+    score: Math.round(topicCounts[topic].sum / topicCounts[topic].count)
+  }));
+
 
   const getBadgeIcon = (pts) => {
     if (pts >= 2500) return '🐉';
@@ -193,23 +211,27 @@ export function InterviewDashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6 shadow-lg">
           <h3 className="text-lg font-semibold text-white mb-4">Interview Performance</h3>
           <div className="w-full h-[250px]">
-            <ResponsiveContainer width="100%" height={250} minWidth={0}>
-              <AreaChart data={performanceData}>
-                <defs>
-                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8a2be2" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#8a2be2" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                <XAxis dataKey="date" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#111827', border: '1px solid #6a11cb', color: '#fff' }}
-                />
-                <Area type="monotone" dataKey="score" stroke="#8a2be2" fillOpacity={1} fill="url(#colorScore)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {interviews.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250} minWidth={0}>
+                <AreaChart data={dynamicPerformanceData}>
+                  <defs>
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8a2be2" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#8a2be2" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                  <XAxis dataKey="date" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#111827', border: '1px solid #6a11cb', color: '#fff' }}
+                  />
+                  <Area type="monotone" dataKey="score" stroke="#8a2be2" fillOpacity={1} fill="url(#colorScore)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartPlaceholder message="Complete your first interview to see performance history" />
+            )}
           </div>
         </div>
 
@@ -217,17 +239,21 @@ export function InterviewDashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6 shadow-lg">
           <h3 className="text-lg font-semibold text-white mb-4">Points Progression</h3>
           <div className="w-full h-[250px]">
-            <ResponsiveContainer width="100%" height={250} minWidth={0}>
-              <LineChart data={pointsData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                <XAxis dataKey="date" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#111827', border: '1px solid #6a11cb', color: '#fff' }}
-                />
-                <Line type="monotone" dataKey="points" stroke="#00c6ff" strokeWidth={3} dot={{ fill: '#00c6ff' }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {interviews.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250} minWidth={0}>
+                <LineChart data={dynamicPointsData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                  <XAxis dataKey="date" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#111827', border: '1px solid #6a11cb', color: '#fff' }}
+                  />
+                  <Line type="monotone" dataKey="points" stroke="#00c6ff" strokeWidth={3} dot={{ fill: '#00c6ff' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartPlaceholder message="Track your cumulative points progress here" />
+            )}
           </div>
         </div>
       </div>
@@ -238,14 +264,18 @@ export function InterviewDashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6 shadow-lg">
           <h3 className="text-lg font-semibold text-white mb-4">Topic Mastery</h3>
           <div className="w-full h-[250px]">
-            <ResponsiveContainer width="100%" height={250} minWidth={0}>
-              <RadarChart data={topicMasteryData}>
-                <PolarGrid stroke="#ffffff20" />
-                <PolarAngleAxis dataKey="topic" stroke="#9ca3af" />
-                <PolarRadiusAxis stroke="#9ca3af" />
-                <Radar name="Score" dataKey="score" stroke="#8a2be2" fill="#8a2be2" fillOpacity={0.6} />
-              </RadarChart>
-            </ResponsiveContainer>
+            {interviews.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250} minWidth={0}>
+                <RadarChart data={dynamicTopicMasteryData}>
+                  <PolarGrid stroke="#ffffff20" />
+                  <PolarAngleAxis dataKey="topic" stroke="#9ca3af" />
+                  <PolarRadiusAxis stroke="#9ca3af" />
+                  <Radar name="Score" dataKey="score" stroke="#8a2be2" fill="#8a2be2" fillOpacity={0.6} />
+                </RadarChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartPlaceholder message="Mastery breakdown by technical topic" />
+            )}
           </div>
         </div>
 
