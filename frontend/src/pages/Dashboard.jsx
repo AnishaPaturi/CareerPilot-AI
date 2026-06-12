@@ -72,6 +72,8 @@ export default function Dashboard() {
   // Data states
   const [drives, setDrives] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [resumeHistory, setResumeHistory] = useState([]);
+  const [mockInterviews, setMockInterviews] = useState([]);
   const [newDrive, setNewDrive] = useState({ companyName: '', role: '', packageLpa: '', minCgpa: '', allowedBranches: '', driveDate: '' });
   const [formMsg, setFormMsg] = useState('');
 
@@ -90,7 +92,11 @@ export default function Dashboard() {
       drivesAPI.getAll().then(setDrives).catch(console.error);
     }
     if (role === 'STUDENT' && (active === 'applications' || active === 'dashboard')) {
-      if(user?.id) applicationsAPI.getByStudent(user.id).then(setApplications).catch(console.error);
+      if (user?.id) {
+        applicationsAPI.getByStudent(user.id).then(setApplications).catch(console.error);
+        studentsAPI.getResumeHistory(user.id).then(setResumeHistory).catch(console.error);
+        mockInterviewAPI.getByStudent(user.id).then(setMockInterviews).catch(console.error);
+      }
     }
   }, [active, role, user?.id]);
 
@@ -178,10 +184,31 @@ export default function Dashboard() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const latestAtsScore = resumeHistory.length > 0 && resumeHistory[resumeHistory.length - 1].atsScore
+    ? resumeHistory[resumeHistory.length - 1].atsScore
+    : 0;
+
+  const latestInterviewScore = mockInterviews.length > 0
+    ? Math.round(mockInterviews.reduce((sum, i) => sum + (i.overallScore || 0), 0) / mockInterviews.length)
+    : 0;
+
+  const [dsaScore, setDsaScore] = useState(0);
+  useEffect(() => {
+    if (user?.id) {
+      const score = localStorage.getItem(`dsa_score_${user.id}`);
+      setDsaScore(score ? parseInt(score) : 0);
+    }
+  }, [active, user?.id]);
+
+  const activeScores = [latestAtsScore, latestInterviewScore, dsaScore].filter(s => s > 0);
+  const aggregateScore = activeScores.length > 0
+    ? Math.round(activeScores.reduce((sum, s) => sum + s, 0) / activeScores.length)
+    : 0;
+
   const stats = [
-    { label: 'Resumes Created', value: '0', icon: '📄' },
-    { label: 'AI Suggestions', value: '0', icon: '✨' },
-    { label: 'Profile Score', value: '—', icon: '📊' },
+    { label: 'Resumes Created', value: resumeHistory.length.toString(), icon: '📄' },
+    { label: 'AI Suggestions', value: latestAtsScore > 0 ? '5+' : '0', icon: '✨' },
+    { label: 'Profile Score', value: latestAtsScore > 0 ? `${latestAtsScore}%` : '—', icon: '📊' },
     { label: 'Applications', value: applications.length.toString(), icon: '🎯' },
   ];
 
@@ -339,23 +366,23 @@ export default function Dashboard() {
                           <circle cx="40" cy="40" r="34" className="stroke-white/[0.06]" strokeWidth="6" fill="transparent" />
                           <circle cx="40" cy="40" r="34" className="stroke-purple-500" strokeWidth="6" fill="transparent"
                             strokeDasharray={213.6}
-                            strokeDashoffset={213.6 - (213.6 * 76) / 100}
+                            strokeDashoffset={213.6 - (213.6 * aggregateScore) / 100}
                             strokeLinecap="round" />
                         </svg>
-                        <span className="absolute text-white font-bold text-xl">76%</span>
+                        <span className="absolute text-white font-bold text-xl">{aggregateScore}%</span>
                       </div>
                       <div className="space-y-1 text-xs">
                         <div className="flex items-center gap-1.5">
                           <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                          <span className="text-slate-300">ATS Score: 78%</span>
+                          <span className="text-slate-300">ATS Score: {latestAtsScore > 0 ? `${latestAtsScore}%` : 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                          <span className="text-slate-300">AI Interviews: 82%</span>
+                          <span className="text-slate-300">AI Interviews: {latestInterviewScore > 0 ? `${latestInterviewScore}%` : 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                          <span className="text-slate-300">DSA Planner: 65%</span>
+                          <span className="text-slate-300">DSA Planner: {dsaScore > 0 ? `${dsaScore}%` : 'N/A'}</span>
                         </div>
                       </div>
                     </div>

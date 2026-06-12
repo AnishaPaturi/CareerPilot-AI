@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { dsaPlannerAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const COMMON_LEETCODE_MAP = {
   "two sum": { id: 1, difficulty: "Easy" },
@@ -96,6 +97,7 @@ const getLeetCodeUrl = (problemStr) => {
 };
 
 export default function DSAPlanner() {
+  const { user } = useAuth();
   const [currentLevel, setCurrentLevel] = useState('Beginner');
   const [targetCompany, setTargetCompany] = useState('MAANG');
   const [timeAvailable, setTimeAvailable] = useState(2);
@@ -104,6 +106,68 @@ export default function DSAPlanner() {
 
   const [roadmap, setRoadmap] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [completedProblems, setCompletedProblems] = useState([]);
+
+  // Load saved roadmap and completed problems on mount
+  useEffect(() => {
+    if (user?.id) {
+      const savedRoadmap = localStorage.getItem(`dsa_roadmap_${user.id}`);
+      if (savedRoadmap) {
+        try {
+          setRoadmap(JSON.parse(savedRoadmap));
+        } catch (e) {
+          console.error("Failed to load saved roadmap:", e);
+        }
+      }
+
+      const savedCompleted = localStorage.getItem(`dsa_completed_${user.id}`);
+      if (savedCompleted) {
+        try {
+          setCompletedProblems(JSON.parse(savedCompleted));
+        } catch (e) {
+          console.error("Failed to load completed problems:", e);
+        }
+      }
+    }
+  }, [user?.id]);
+
+  const updateDsaScore = (completedList, currentRoadmap) => {
+    if (!currentRoadmap || !currentRoadmap.daily_goals) return;
+    let totalProblems = 0;
+    let completedCount = 0;
+
+    currentRoadmap.daily_goals.forEach(goal => {
+      if (goal.problems) {
+        goal.problems.forEach(prob => {
+          totalProblems++;
+          const formatted = formatProblemString(prob);
+          if (completedList.includes(formatted)) {
+            completedCount++;
+          }
+        });
+      }
+    });
+
+    const score = totalProblems > 0 ? Math.round((completedCount / totalProblems) * 100) : 0;
+    if (user?.id) {
+      localStorage.setItem(`dsa_score_${user.id}`, String(score));
+    }
+  };
+
+  const toggleProblemCompletion = (prob) => {
+    const formatted = formatProblemString(prob);
+    let updated;
+    if (completedProblems.includes(formatted)) {
+      updated = completedProblems.filter(p => p !== formatted);
+    } else {
+      updated = [...completedProblems, formatted];
+    }
+    setCompletedProblems(updated);
+    if (user?.id) {
+      localStorage.setItem(`dsa_completed_${user.id}`, JSON.stringify(updated));
+    }
+    updateDsaScore(updated, roadmap);
+  };
 
   const generateRoadmap = async (e) => {
     e.preventDefault();
@@ -117,6 +181,10 @@ export default function DSAPlanner() {
       };
       const data = await dsaPlannerAPI.generateRoadmap(profile, parseInt(days));
       setRoadmap(data);
+      if (user?.id) {
+        localStorage.setItem(`dsa_roadmap_${user.id}`, JSON.stringify(data));
+      }
+      updateDsaScore(completedProblems, data);
     } catch (err) {
       console.error(err);
       alert("Failed to generate roadmap");
@@ -189,19 +257,24 @@ export default function DSAPlanner() {
                       const formattedProb = formatProblemString(prob);
                       const url = getLeetCodeUrl(formattedProb);
                       return (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="text-blue-500 mt-1">▹</span>
+                        <li key={i} className="flex items-center gap-3 bg-white/[0.01] p-2 rounded-lg hover:bg-white/[0.03] transition-all border border-white/5">
+                          <input
+                            type="checkbox"
+                            checked={completedProblems.includes(formattedProb)}
+                            onChange={() => toggleProblemCompletion(prob)}
+                            className="accent-blue-500 rounded cursor-pointer w-4 h-4 shrink-0"
+                          />
                           {url ? (
                             <a
                               href={url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-400 hover:text-blue-300 hover:underline transition-all text-slate-300"
+                              className={`hover:text-blue-300 hover:underline transition-all text-sm font-medium ${completedProblems.includes(formattedProb) ? 'line-through text-slate-500' : 'text-blue-400'}`}
                             >
                               {formattedProb}
                             </a>
                           ) : (
-                            <span className="text-slate-300">{formattedProb}</span>
+                            <span className={`text-sm ${completedProblems.includes(formattedProb) ? 'line-through text-slate-500' : 'text-slate-300'}`}>{formattedProb}</span>
                           )}
                         </li>
                       );

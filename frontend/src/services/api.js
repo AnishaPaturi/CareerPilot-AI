@@ -190,6 +190,23 @@ export const aiInterviewAPI = {
   }
 };
 
+export const mockInterviewAPI = {
+  getByStudent: async (studentId) => {
+    const res = await fetch(`${BASE_URL}/api/mock-interviews/student/${studentId}`);
+    if (!res.ok) throw new Error('Failed to fetch mock interviews');
+    return res.json();
+  },
+  save: async (interviewData) => {
+    const res = await fetch(`${BASE_URL}/api/mock-interviews`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(interviewData)
+    });
+    if (!res.ok) throw new Error('Failed to save mock interview');
+    return res.json();
+  }
+};
+
 export const studentsAPI = {
   getAll: async () => {
     const res = await fetch(`${BASE_URL}/api/students`);
@@ -201,6 +218,11 @@ export const studentsAPI = {
       method: "POST"
     });
     if (!res.ok) throw new Error('Auto-apply failed');
+    return res.json();
+  },
+  getResumeHistory: async (studentId) => {
+    const res = await fetch(`${BASE_URL}/api/students/${studentId}/resume-history`);
+    if (!res.ok) throw new Error('Failed to fetch resume history');
     return res.json();
   }
 };
