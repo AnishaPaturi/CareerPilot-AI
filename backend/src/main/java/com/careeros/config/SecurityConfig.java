@@ -21,10 +21,12 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/").permitAll()
+                .requestMatchers("/error").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/students/register").permitAll()
-                .requestMatchers("/api/**").permitAll() // TEMPORARY: Allow all API requests during development phase
-                .requestMatchers("/error").permitAll()
+                .requestMatchers("/api/**").permitAll()
                 .anyRequest().authenticated()
             );
         return http.build();
