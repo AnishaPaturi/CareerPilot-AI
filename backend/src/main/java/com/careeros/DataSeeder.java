@@ -2,8 +2,10 @@ package com.careeros;
 
 import com.careeros.model.Company;
 import com.careeros.model.Drive;
+import com.careeros.model.User;
 import com.careeros.repository.CompanyRepository;
 import com.careeros.repository.DriveRepository;
+import com.careeros.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,8 +17,18 @@ import java.util.List;
 public class DataSeeder {
 
     @Bean
-    CommandLineRunner seedData(CompanyRepository companyRepo, DriveRepository driveRepo) {
+    CommandLineRunner seedData(CompanyRepository companyRepo, DriveRepository driveRepo, UserRepository userRepo) {
         return args -> {
+            if (userRepo.count() == 0) {
+                User admin = new User();
+                admin.setEmail("admin@careeros.com");
+                admin.setPassword("$2a$10$N9qo8gWGBm1z8vTj6p3XdeBxZZxjWpJbLcHyh0pLzzDjnGSZTHQke"); // admin123
+                admin.setName("System Admin");
+                admin.setRole(User.Role.ADMIN);
+                userRepo.save(admin);
+                System.out.println(">>> Seed data: Admin user created.");
+            }
+
             if (companyRepo.count() == 0) {
                 List<Company> companies = List.of(
                         createCompany("Google",                "A global technology company known for Android, Search, Cloud, and AI products.",                    "https://careers.google.com"),
