@@ -22,7 +22,7 @@ public class AiService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${ai.service.base-url:https://example.com}")
+    @Value("${ai.service.base-url:https://careerpilot-ai-pngu.onrender.com}")
     private String FASTAPI_BASE_URL;
 
     public Map<String, Object> parseResumeForProfile(MultipartFile file) {
