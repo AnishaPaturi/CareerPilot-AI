@@ -136,3 +136,202 @@ async def recommend_problems(topic: str, count: int = 10, difficulty: Optional[s
             continue
             
     raise HTTPException(status_code=500, detail=f"All models failed. Last error: {str(last_error)}")
+
+# --- Career Roadmap Models & Endpoint ---
+
+class CareerRoadmapRequest(BaseModel):
+    target_role: str
+    current_skills: List[str]
+    target_company_type: Optional[str] = "MAANG"
+
+class SkillGapAnalysis(BaseModel):
+    current_skills: List[str]
+    required_skills: List[str]
+    missing_skills: List[str]
+    gap_report: str
+
+class LearningResource(BaseModel):
+    skill: str
+    resource_name: str
+    url: str
+
+class WeeklyGoal(BaseModel):
+    week: int
+    topic: str
+    tasks: List[str]
+
+class CareerRoadmapResponse(BaseModel):
+    title: str
+    target_role: str
+    skill_gap_analysis: SkillGapAnalysis
+    learning_resources: List[LearningResource]
+    weekly_goals: List[WeeklyGoal]
+
+@router.post("/generate-career-roadmap", response_model=CareerRoadmapResponse)
+async def generate_career_roadmap(request: CareerRoadmapRequest):
+    parser = JsonOutputParser(pydantic_object=CareerRoadmapResponse)
+    
+    prompt = ChatPromptTemplate.from_template("""
+    Create a personalized 4-week Career Roadmap and Skill Gap Report for:
+    - Target Role: {target_role}
+    - Current Skills: {current_skills}
+    - Target Company Tier: {target_company_type}
+    
+    Guidelines:
+    1. Assess the skill gap between target role requirements and user's current skills.
+    2. Provide 4 weekly topics with 3 actionable tasks per week to bridge the gap.
+    3. Suggest high-quality online learning resources (e.g. FreeCodeCamp, Roadmap.sh, MDN).
+    
+    {format_instructions}
+    """)
+    
+    models = []
+    for m in [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free", "poolside/laguna-m.1:free", "liquid/lfm-2.5-1.2b-thinking:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+        if m and m not in models:
+            models.append(m)
+            
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.5,
+                max_retries=1
+            )
+            chain = prompt | llm | parser
+            result = chain.invoke({
+                "target_role": request.target_role,
+                "current_skills": ", ".join(request.current_skills),
+                "target_company_type": request.target_company_type,
+                "format_instructions": parser.get_format_instructions()
+            })
+            return CareerRoadmapResponse(**result)
+        except Exception as e:
+            import sys
+            print(f"Failed to generate career roadmap using model {model}: {e}", file=sys.stderr)
+            continue
+            
+    # Heuristic fallback if LLMs fail (ensures offline robustness)
+    role = request.target_role.lower()
+    curr_skills_lower = [s.lower() for s in request.current_skills]
+    
+    if "front" in role or "react" in role or "web" in role or "ui" in role:
+        title = "Frontend Developer Career Roadmap"
+        req_skills = ["HTML", "CSS", "JavaScript", "TypeScript", "React", "Redux", "TailwindCSS", "Git", "Testing"]
+        missing = [s for s in req_skills if s.lower() not in curr_skills_lower]
+        if not missing:
+            missing = ["Next.js", "GraphQL", "CI/CD"]
+            
+        gap_report = "You have basic web design knowledge. To achieve a modern frontend role, prioritize mastering React, state management, and source control."
+        resources = [
+            LearningResource(skill="JavaScript", resource_name="MDN Web Docs", url="https://developer.mozilla.org"),
+            LearningResource(skill="React", resource_name="React Official Docs", url="https://react.dev"),
+            LearningResource(skill="TailwindCSS", resource_name="TailwindCSS Guide", url="https://tailwindcss.com"),
+            LearningResource(skill="Git", resource_name="Git Tutorial (GitHub)", url="https://git-scm.com")
+        ]
+        weekly_goals = [
+            WeeklyGoal(week=1, topic="Advanced JS & TypeScript fundamentals", tasks=[
+                "Master ES6+ syntax, Promises, and Async/Await",
+                "Learn basic TypeScript types, interfaces, and compiler config",
+                "Build a small TypeScript utility app (e.g. calculator)"
+            ]),
+            WeeklyGoal(week=2, topic="React Components & Hook State", tasks=[
+                "Understand functional components, props, and standard hooks (useState, useEffect)",
+                "Create a dynamic dashboard with custom hooks and data fetching",
+                "Manage complex state with useContext or lightweight Redux Toolkit"
+            ]),
+            WeeklyGoal(week=3, topic="Modern Styling & Grid Layouts", tasks=[
+                "Configure TailwindCSS inside your React project",
+                "Build a fully responsive multi-page landing page layout",
+                "Add micro-interactions and transitions using standard CSS / Framer Motion"
+            ]),
+            WeeklyGoal(week=4, topic="Version Control & Deployment", tasks=[
+                "Learn Git branching, merging, and pull request workflows",
+                "Deploy the React application live on Vercel or Netlify",
+                "Run a basic Lighthouse audit and optimize image sizes & load times"
+            ])
+        ]
+    elif "back" in role or "java" in role or "node" in role or "spring" in role:
+        title = "Backend Systems Developer Career Roadmap"
+        req_skills = ["Java", "Spring Boot", "Node.js", "Express", "SQL", "PostgreSQL", "REST APIs", "Docker", "Git"]
+        missing = [s for s in req_skills if s.lower() not in curr_skills_lower]
+        if not missing:
+            missing = ["System Design", "Kubernetes", "Redis"]
+            
+        gap_report = "To secure a backend role, you need to transition from simple scripts to constructing RESTful API architectures, database connections, and containerized deployments."
+        resources = [
+            LearningResource(skill="REST APIs", resource_name="REST API Tutorial", url="https://restfulapi.net"),
+            LearningResource(skill="PostgreSQL", resource_name="PostgreSQL Exercises", url="https://www.pgexercises.com"),
+            LearningResource(skill="Spring Boot", resource_name="Spring Boot Quickstart", url="https://spring.io/projects/spring-boot"),
+            LearningResource(skill="Docker", resource_name="Docker Basics", url="https://roadmap.sh/docker")
+        ]
+        weekly_goals = [
+            WeeklyGoal(week=1, topic="RESTful API Design & Routing", tasks=[
+                "Learn HTTP status codes, verbs, and clean URL structure design",
+                "Build a clean Express or Spring Boot REST API for a task database",
+                "Implement validation middleware to handle bad request payloads"
+            ]),
+            WeeklyGoal(week=2, topic="Relational Databases & SQL", tasks=[
+                "Design a schema with primary, foreign keys, and indexes",
+                "Connect your backend application to a PostgreSQL database using JPA/Hibernate or pg-pool",
+                "Practice writing subqueries, joins, and aggregating values"
+            ]),
+            WeeklyGoal(week=3, topic="Secure Authentication & JWT", tasks=[
+                "Hash passwords securely using Bcrypt (minimum cost 12)",
+                "Implement JWT token creation, signing, and verification flow",
+                "Create a login controller and register protected routes using middleware"
+            ]),
+            WeeklyGoal(week=4, topic="Containerization & local deploy", tasks=[
+                "Write a multi-stage Dockerfile to containerize your backend app",
+                "Set up docker-compose.yml to run database and server together",
+                "Deploy backend server to Render or AWS EC2"
+            ])
+        ]
+    else:
+        title = f"AI/Software Engineering Roadmap ({request.target_role})"
+        req_skills = ["Data Structures", "Algorithms", "System Design", "Python", "SQL", "Git", "Docker"]
+        missing = [s for s in req_skills if s.lower() not in curr_skills_lower]
+        if not missing:
+            missing = ["Cloud Deployment", "CI/CD"]
+            
+        gap_report = f"Bridge the gaps to qualify for a {request.target_role} position. Focus on software development cycles, version control, and containerization."
+        resources = [
+            LearningResource(skill="DSA", resource_name="LeetCode practice patterns", url="https://leetcode.com"),
+            LearningResource(skill="System Design", resource_name="System Design Primer", url="https://github.com/donnemartin/system-design-primer")
+        ]
+        weekly_goals = [
+            WeeklyGoal(week=1, topic="Algorithmic problem patterns", tasks=[
+                "Master Two Pointers, Sliding Window, and Hash Map optimizations",
+                "Solve 10 medium-level problems on LeetCode",
+                "Write down and compare time and space complexities for each"
+            ]),
+            WeeklyGoal(week=2, topic="Object Oriented Design", tasks=[
+                "Review OOP principles: Polymorphism, Inheritance, Encapsulation",
+                "Build a design pattern showcase (e.g. Singleton, Factory)",
+                "Write unit tests (JUnit / PyTest) achieving 80% coverage"
+            ]),
+            WeeklyGoal(week=3, topic="Data Stores & Caching", tasks=[
+                "Master SQL queries, constraints, and index operations",
+                "Learn how Redis is used as a caching layer to reduce latency",
+                "Configure a simple Redis cache inside an application"
+            ]),
+            WeeklyGoal(week=4, topic="DevOps & Deployment Basics", tasks=[
+                "Write a Dockerfile and containerize your application",
+                "Deploy the app to a free platform (e.g. Render, Vercel)",
+                "Set up a GitHub Action to run code checks on pull requests"
+            ])
+        ]
+        
+    return CareerRoadmapResponse(
+        title=title,
+        target_role=request.target_role,
+        skill_gap_analysis=SkillGapAnalysis(
+            current_skills=request.current_skills,
+            required_skills=req_skills,
+            missing_skills=missing,
+            gap_report=gap_report
+        ),
+        learning_resources=resources,
+        weekly_goals=weekly_goals
+    )

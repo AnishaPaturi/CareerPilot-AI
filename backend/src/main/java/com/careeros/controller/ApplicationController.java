@@ -59,5 +59,56 @@ public class ApplicationController {
         }
         return ResponseEntity.status(404).body("Application not found");
     }
+
+    @PostMapping
+    public ResponseEntity<Application> createApplication(@RequestBody Application application) {
+        try {
+            if (application.getAppliedOn() == null) {
+                application.setAppliedOn(new java.sql.Timestamp(System.currentTimeMillis()));
+            }
+            Application saved = applicationRepository.save(application);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateApplication(@PathVariable int id, @RequestBody Application updateData) {
+        try {
+            Application existing = applicationRepository.getById(id);
+            if (existing == null) {
+                return ResponseEntity.status(404).body("Application not found");
+            }
+            
+            if (updateData.getStatus() != null) existing.setStatus(updateData.getStatus());
+            if (updateData.getCompanyName() != null) existing.setCompanyName(updateData.getCompanyName());
+            if (updateData.getRole() != null) existing.setRole(updateData.getRole());
+            if (updateData.getMatchScore() != null) existing.setMatchScore(updateData.getMatchScore());
+            if (updateData.getFollowUpDate() != null) existing.setFollowUpDate(updateData.getFollowUpDate());
+            if (updateData.getNotes() != null) existing.setNotes(updateData.getNotes());
+            if (updateData.getJobUrl() != null) existing.setJobUrl(updateData.getJobUrl());
+            if (updateData.getIsExternal() != null) existing.setIsExternal(updateData.getIsExternal());
+            
+            Application saved = applicationRepository.save(existing);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteApplication(@PathVariable int id) {
+        try {
+            Application existing = applicationRepository.getById(id);
+            if (existing != null) {
+                applicationRepository.deleteById(id);
+                return ResponseEntity.ok("Application deleted successfully");
+            }
+            return ResponseEntity.status(404).body("Application not found");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error deleting application: " + e.getMessage());
+        }
+    }
 }
 

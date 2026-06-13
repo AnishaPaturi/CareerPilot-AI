@@ -3,9 +3,9 @@ package com.careeros.repository;
 import com.careeros.model.Resume;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface ResumeRepository extends JpaRepository<Resume, Integer> {
-    Optional<Resume> findByStudentId(Integer studentId);
+    List<Resume> findByStudentId(Integer studentId);
 }

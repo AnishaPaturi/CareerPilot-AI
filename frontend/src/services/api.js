@@ -166,6 +166,31 @@ export const applicationsAPI = {
     });
     if (!res.ok) throw new Error('Failed to update status');
     return res.text();
+  },
+  create: async (appData) => {
+    const res = await fetch(`${BASE_URL}/api/applications`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(appData)
+    });
+    if (!res.ok) throw new Error('Failed to create application');
+    return res.json();
+  },
+  update: async (id, appData) => {
+    const res = await fetch(`${BASE_URL}/api/applications/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(appData)
+    });
+    if (!res.ok) throw new Error('Failed to update application');
+    return res.json();
+  },
+  delete: async (id) => {
+    const res = await fetch(`${BASE_URL}/api/applications/${id}`, {
+      method: "DELETE"
+    });
+    if (!res.ok) throw new Error('Failed to delete application');
+    return res.text();
   }
 };
 
@@ -325,5 +350,68 @@ export const atsAPI = {
     });
     if (!res.ok) throw new Error('Failed to generate cover letter');
     return res.json();
+  },
+  generateColdEmail: async (companyName, role, keyStrengths, contactPerson, resumeText) => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/ats/generate-cold-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_name: companyName,
+        role: role,
+        key_strengths: keyStrengths,
+        contact_person: contactPerson,
+        resume_text: resumeText
+      })
+    });
+    if (!res.ok) throw new Error('Failed to generate cold email');
+    return res.json();
+  },
+  generateLinkedInSummary: async (resumeText, tone = 'Professional') => {
+    const res = await fetch(`${AI_BASE_URL}/api/ai/ats/generate-linkedin-summary`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        resume_text: resumeText,
+        tone: tone
+      })
+    });
+    if (!res.ok) throw new Error('Failed to generate LinkedIn summary');
+    return res.json();
+  }
+};
+
+export const careerRoadmapAPI = {
+  generateRoadmap: async (targetRole, currentSkills, targetCompanyType = 'MAANG') => {
+    const res = await fetch(`${BASE_URL}/api/ai/career/generate-roadmap`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target_role: targetRole, current_skills: currentSkills, target_company_type: targetCompanyType })
+    });
+    if (!res.ok) throw new Error('Failed to generate career roadmap');
+    return res.json();
+  }
+};
+
+export const resumeVersionAPI = {
+  getAll: async (studentId) => {
+    const res = await fetch(`${BASE_URL}/api/resumes/student/${studentId}`);
+    if (!res.ok) throw new Error('Failed to fetch resume versions');
+    return res.json();
+  },
+  save: async (resumeData) => {
+    const res = await fetch(`${BASE_URL}/api/resumes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(resumeData)
+    });
+    if (!res.ok) throw new Error('Failed to save resume version');
+    return res.json();
+  },
+  delete: async (id) => {
+    const res = await fetch(`${BASE_URL}/api/resumes/${id}`, {
+      method: "DELETE"
+    });
+    if (!res.ok) throw new Error('Failed to delete resume version');
+    return res.text();
   }
 };

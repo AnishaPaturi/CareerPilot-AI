@@ -35,6 +35,10 @@ export function InterviewRoom() {
   const [cameraError, setCameraError] = useState(null);
   const [micError, setMicError] = useState(null);
 
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+
   // Load questions from current session
   useEffect(() => {
     if (currentInterview && currentInterview.questions) {
@@ -47,6 +51,10 @@ export function InterviewRoom() {
       setInterviewTab('setup');
     }
   }, [currentInterview]);
+
+  useEffect(() => {
+    setQuestionStartTime(Date.now());
+  }, [currentQuestionIndex]);
 
   // Timer
   useEffect(() => {
@@ -139,7 +147,7 @@ export function InterviewRoom() {
     };
   }, [tabSwitchCount]);
 
-  // Handle Camera Stream
+  // Handle Camera Stream & Media Recording
   useEffect(() => {
     async function enableStream() {
       try {
@@ -147,14 +155,47 @@ export function InterviewRoom() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           throw new Error('Webcam is not supported in this browser/context (requires HTTPS/localhost).');
         }
+        // Request video and audio so we can record sound
         const userStream = await navigator.mediaDevices.getUserMedia({
           video: { width: 640, height: 480 },
-          audio: false
+          audio: true
+        }).catch(async (err) => {
+          console.warn("Failed to get stream with audio, falling back to video only:", err);
+          return await navigator.mediaDevices.getUserMedia({
+            video: { width: 640, height: 480 },
+            audio: false
+          });
         });
+
         setStream(userStream);
         if (videoRef.current) {
           videoRef.current.srcObject = userStream;
         }
+
+        // Initialize MediaRecorder
+        try {
+          recordedChunksRef.current = [];
+          let options = { mimeType: 'video/webm;codecs=vp9,opus' };
+          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options.mimeType = 'video/webm;codecs=vp8,opus';
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+              options.mimeType = 'video/webm';
+            }
+          }
+          const mediaRecorder = new MediaRecorder(userStream, options);
+          mediaRecorderRef.current = mediaRecorder;
+          
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) {
+              recordedChunksRef.current.push(e.data);
+            }
+          };
+          
+          mediaRecorder.start(1000); // chunk every 1 sec
+        } catch (recErr) {
+          console.error("Failed to start MediaRecorder:", recErr);
+        }
+
       } catch (err) {
         console.error("Failed to get webcam stream:", err);
         setCameraError(err.name === 'NotAllowedError' ? 'Permission denied' : err.message);
@@ -168,6 +209,9 @@ export function InterviewRoom() {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         setStream(null);
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try { mediaRecorderRef.current.stop(); } catch(e) {}
       }
     }
 
@@ -269,9 +313,27 @@ export function InterviewRoom() {
       clearTimeout(silenceTimeoutRef.current);
     }
     
-    // Save answer
+    // Calculate pacing & filler words
+    const durationSec = (Date.now() - questionStartTime) / 1000;
+    const wordCount = userAnswer.trim().split(/\s+/).length;
+    const wpm = durationSec > 0 ? Math.round((wordCount / durationSec) * 60) : 0;
+
+    const fillers = ['um', 'uh', 'like', 'basically', 'actually', 'literally', 'you know'];
+    let fillerCount = 0;
+    fillers.forEach(word => {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi');
+      const matches = userAnswer.match(regex);
+      if (matches) fillerCount += matches.length;
+    });
+
     const currentQuestionText = questions[currentQuestionIndex]?.question;
-    const nextAnswers = [...answers, { question: currentQuestionText, answer: userAnswer }];
+    const nextAnswers = [...answers, { 
+      question: currentQuestionText, 
+      answer: userAnswer,
+      wpm,
+      fillerCount,
+      durationSec
+    }];
     setAnswers(nextAnswers);
     
     setTranscript(prev => [...prev, { speaker: 'User', text: userAnswer }]);
@@ -304,6 +366,26 @@ export function InterviewRoom() {
     }
     
     setIsEvaluating(true);
+    
+    // Stop recording and get recorded video URL
+    let recordedVideoUrl = "";
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      const stopPromise = new Promise((resolve) => {
+        mediaRecorderRef.current.onstop = () => {
+          if (recordedChunksRef.current.length > 0) {
+            const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+            resolve(URL.createObjectURL(blob));
+          } else {
+            resolve("");
+          }
+        };
+      });
+      try {
+        mediaRecorderRef.current.stop();
+      } catch(e) {}
+      recordedVideoUrl = await stopPromise;
+    }
+
     try {
       // Evaluate all answers in parallel using the actual evaluate API
       const evaluations = await Promise.all(
@@ -324,6 +406,17 @@ export function InterviewRoom() {
       const strengths = evaluations.flatMap(e => e.feedback ? [e.feedback] : []).slice(0, 3);
       const improvements = evaluations.flatMap(e => e.improvements || []).slice(0, 3);
 
+      const totalFillers = answers.reduce((sum, a) => sum + (a.fillerCount || 0), 0);
+      const averageWpm = Math.round(answers.reduce((sum, a) => sum + (a.wpm || 0), 0) / answers.length);
+
+      let pacingScore = 80;
+      if (averageWpm >= 110 && averageWpm <= 150) pacingScore = 95;
+      else if (averageWpm >= 85 && averageWpm < 110) pacingScore = 85;
+      else if (averageWpm > 150) pacingScore = 70;
+      else pacingScore = 60;
+
+      const fluencyScore = Math.max(45, 100 - (totalFillers * 8));
+
       const interviewResults = {
         id: String(Date.now()),
         date: new Date().toISOString().split('T')[0],
@@ -336,9 +429,18 @@ export function InterviewRoom() {
         badge: 'deer',
         pointsEarned: Math.round(averageScore * 15),
         transcript: transcript,
+        recordedVideoUrl: recordedVideoUrl,
+        averageWpm: averageWpm,
+        totalFillers: totalFillers,
+        pacingScore: pacingScore,
+        fluencyScore: fluencyScore,
         feedback: {
           strengths: strengths.length > 0 ? strengths : ["Good articulation", "Proper structuring of answers"],
-          weaknesses: ["Could improve depth in dynamic scaling questions"],
+          weaknesses: [
+            totalFillers > 3 ? `Used ${totalFillers} filler words during the speech.` : "Answer depth could be slightly improved.",
+            averageWpm > 150 ? "Speaking pace was slightly too fast (over 150 WPM)." : 
+            averageWpm < 85 ? "Speaking pace was slightly slow (under 85 WPM)." : "Could structure answers using more technical metrics."
+          ],
           improvements: improvements.length > 0 ? improvements : ["Practice edge-case analysis", "Expand answers with live examples"]
         }
       };
@@ -350,7 +452,6 @@ export function InterviewRoom() {
       console.error("Interview compilation failed:", err);
       alert("Failed to evaluate interview. Saving mock summary instead.");
       
-      // Fallback summary
       const fallbackResults = {
         id: String(Date.now()),
         date: new Date().toISOString().split('T')[0],
@@ -363,6 +464,11 @@ export function InterviewRoom() {
         badge: 'deer',
         pointsEarned: 120,
         transcript: transcript,
+        recordedVideoUrl: recordedVideoUrl,
+        averageWpm: 125,
+        totalFillers: 2,
+        pacingScore: 95,
+        fluencyScore: 90,
         feedback: {
           strengths: ["Clear structuring of thoughts", "Good communication speed"],
           weaknesses: ["Need deeper explanation of trade-offs"],

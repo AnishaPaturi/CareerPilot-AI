@@ -19,6 +19,15 @@ public class Application {
     private String companyName;
     private String role;
 
+    private Integer matchScore;
+    private String followUpDate;
+    private Boolean isExternal;
+    
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+    
+    private String jobUrl;
+
     public Application() {}
 
     public Integer getId() { return id; }
@@ -37,5 +46,20 @@ public class Application {
     public void setCompanyName(String companyName) { this.companyName = companyName; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public Integer getMatchScore() { return matchScore; }
+    public void setMatchScore(Integer matchScore) { this.matchScore = matchScore; }
+
+    public String getFollowUpDate() { return followUpDate; }
+    public void setFollowUpDate(String followUpDate) { this.followUpDate = followUpDate; }
+
+    public Boolean getIsExternal() { return isExternal; }
+    public void setIsExternal(Boolean isExternal) { this.isExternal = isExternal; }
+
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
+
+    public String getJobUrl() { return jobUrl; }
+    public void setJobUrl(String jobUrl) { this.jobUrl = jobUrl; }
 }
 

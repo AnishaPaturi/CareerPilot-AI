@@ -154,33 +154,60 @@ export function InterviewResults() {
 
       {/* Detailed Scores */}
       <div className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6">
-        <h3 className="text-xl font-semibold text-white mb-4">Detailed Scores</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <h3 className="text-xl font-semibold text-white mb-4">Detailed Scores & Speech Metrics</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-lg">
-            <div className="text-sm text-slate-400 mb-1">Accuracy Score</div>
-            <div className="text-3xl font-bold text-green-400">{currentInterview?.accuracy || 85}%</div>
-            <div className="w-full bg-white/10 rounded-full h-2 mt-2">
-              <div className="bg-green-500 h-2 rounded-full" style={{ width: `${currentInterview?.accuracy || 85}%` }}></div>
+            <div className="text-xs text-slate-400 mb-1">Accuracy Score</div>
+            <div className="text-2xl font-bold text-green-400">{currentInterview?.accuracy || 85}%</div>
+            <div className="w-full bg-white/10 rounded-full h-1.5 mt-2">
+              <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${currentInterview?.accuracy || 85}%` }}></div>
             </div>
           </div>
 
           <div className="p-4 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-lg">
-            <div className="text-sm text-slate-400 mb-1">Confidence Score</div>
-            <div className="text-3xl font-bold text-blue-400">{currentInterview?.confidence || 82}%</div>
-            <div className="w-full bg-white/10 rounded-full h-2 mt-2">
-              <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${currentInterview?.confidence || 82}%` }}></div>
+            <div className="text-xs text-slate-400 mb-1">Confidence Score</div>
+            <div className="text-2xl font-bold text-blue-400">{currentInterview?.confidence || 82}%</div>
+            <div className="w-full bg-white/10 rounded-full h-1.5 mt-2">
+              <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${currentInterview?.confidence || 82}%` }}></div>
             </div>
           </div>
 
           <div className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg">
-            <div className="text-sm text-slate-400 mb-1">Communication Score</div>
-            <div className="text-3xl font-bold text-purple-400">{currentInterview?.communication || 88}%</div>
-            <div className="w-full bg-white/10 rounded-full h-2 mt-2">
-              <div className="bg-purple-500 h-2 rounded-full" style={{ width: `${currentInterview?.communication || 88}%` }}></div>
+            <div className="text-xs text-slate-400 mb-1">Communication Score</div>
+            <div className="text-2xl font-bold text-purple-400">{currentInterview?.communication || 88}%</div>
+            <div className="w-full bg-white/10 rounded-full h-1.5 mt-2">
+              <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${currentInterview?.communication || 88}%` }}></div>
+            </div>
+          </div>
+
+          <div className="p-4 bg-gradient-to-br from-yellow-500/10 to-amber-500/10 border border-yellow-500/20 rounded-lg">
+            <div className="text-xs text-slate-400 mb-1">Speaking Pacing</div>
+            <div className="text-2xl font-bold text-yellow-400">{currentInterview?.averageWpm || 120} WPM</div>
+            <div className="text-[10px] text-slate-400 mt-1.5 font-semibold">
+              {currentInterview?.averageWpm > 150 ? "⚠️ Fast Speaker" : 
+               currentInterview?.averageWpm < 90 ? "⚠️ Slow Speaker" : "✅ Optimal Pacing"}
+            </div>
+          </div>
+
+          <div className="p-4 bg-gradient-to-br from-red-500/10 to-pink-500/10 border border-red-500/20 rounded-lg">
+            <div className="text-xs text-slate-400 mb-1">Filler Words Used</div>
+            <div className="text-2xl font-bold text-red-400">{currentInterview?.totalFillers || 0} words</div>
+            <div className="text-[10px] text-slate-400 mt-1.5 font-semibold">
+              {currentInterview?.totalFillers > 4 ? "⚠️ High usage" : "✅ Excellent control"}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Recorded Video Playback */}
+      {currentInterview?.recordedVideoUrl && (
+        <div className="bg-white/5 backdrop-blur-xl border border-purple-500/20 rounded-xl p-6">
+          <h3 className="text-xl font-semibold text-white mb-4">Interview Recording Playback</h3>
+          <div className="max-w-2xl mx-auto rounded-xl overflow-hidden border border-purple-500/20 bg-black shadow-2xl">
+            <video src={currentInterview.recordedVideoUrl} controls className="w-full h-auto" />
+          </div>
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">

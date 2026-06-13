@@ -63,6 +63,18 @@ public class AiController {
         }
     }
 
+    @PostMapping("/ats/match-job")
+    public ResponseEntity<Map<String, Object>> matchJob(@RequestBody Map<String, String> payload) {
+        try {
+            String resumeText = payload.get("resume_text");
+            String jobDescription = payload.get("job_description");
+            Map<String, Object> result = aiService.matchJob(resumeText, jobDescription);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/ats/convert-docx")
     public ResponseEntity<Map<String, Object>> convertResumeToDocx(@RequestBody Map<String, Object> payload) {
         try {
@@ -95,6 +107,15 @@ public class AiController {
     public ResponseEntity<Object> generateDsaRoadmap(@RequestBody Map<String, Object> request) {
         try {
             return ResponseEntity.ok(aiService.generateDsaRoadmap(request));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/career/generate-roadmap")
+    public ResponseEntity<Object> generateCareerRoadmap(@RequestBody Map<String, Object> request) {
+        try {
+            return ResponseEntity.ok(aiService.generateCareerRoadmap(request));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }

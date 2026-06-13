@@ -23,6 +23,9 @@ public class Resume {
     @Column(name = "pdf_url", length = 500)
     private String pdfUrl;
 
+    @Column(name = "label", length = 100)
+    private String label;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -30,6 +33,9 @@ public class Resume {
     private LocalDateTime updatedAt;
 
     public Resume() {}
+
+    public String getLabel() { return label; }
+    public void setLabel(String label) { this.label = label; }
 
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }

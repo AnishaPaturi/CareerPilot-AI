@@ -94,6 +94,12 @@ public class AiService {
         return restTemplate.postForObject(url, request, Map.class);
     }
 
+    public Map<String, Object> matchJob(String resumeText, String jobDescription) {
+        String url = FASTAPI_BASE_URL + "/ats/match-job";
+        Map<String, String> request = Map.of("resume_text", resumeText, "job_description", jobDescription);
+        return restTemplate.postForObject(url, request, Map.class);
+    }
+
     public Object generateInterviewQuestions(Map<String, Object> request) {
         String url = FASTAPI_BASE_URL + "/interview/generate-questions";
         return restTemplate.postForObject(url, request, Object.class);
@@ -107,6 +113,12 @@ public class AiService {
     @Cacheable(value = "dsaRoadmaps", key = "#request.toString()", unless = "#result == null")
     public Object generateDsaRoadmap(Map<String, Object> request) {
         String url = FASTAPI_BASE_URL + "/dsa/generate-roadmap";
+        return restTemplate.postForObject(url, request, Object.class);
+    }
+
+    @Cacheable(value = "careerRoadmaps", key = "#request.toString()", unless = "#result == null")
+    public Object generateCareerRoadmap(Map<String, Object> request) {
+        String url = FASTAPI_BASE_URL + "/dsa/generate-career-roadmap";
         return restTemplate.postForObject(url, request, Object.class);
     }
 

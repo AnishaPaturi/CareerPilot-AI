@@ -959,3 +959,99 @@ async def generate_cover_letter(request: CoverLetterRequest):
             continue
             
     return {"cover_letter": "Dear Hiring Manager,\n\nI am writing to express my strong interest in the " + (request.role or "Software Engineer") + " position at " + (request.company_name or "your company") + ". With a strong background in software development and technical problem-solving as outlined in my resume, I am confident in my ability to contribute value to your team.\n\nThank you for your consideration.\n\nSincerely,\nCandidate"}
+
+class ColdEmailRequest(BaseModel):
+    company_name: str
+    role: str
+    key_strengths: Optional[str] = None
+    contact_person: Optional[str] = None
+    resume_text: Optional[str] = None
+
+class LinkedInSummaryRequest(BaseModel):
+    resume_text: str
+    tone: Optional[str] = "Professional"
+
+@router.post("/generate-cold-email")
+async def generate_cold_email(request: ColdEmailRequest):
+    prompt = ChatPromptTemplate.from_template("""
+    You are an expert networking and job search strategist. Write a highly personalized, brief, and engaging cold email from a candidate to a recruiter or hiring manager.
+    
+    Target Company: {company_name}
+    Role: {role}
+    Contact Person: {contact_person}
+    Candidate Key Strengths/Interests: {key_strengths}
+    Candidate Resume/Experience details: {resume_text}
+    
+    Write a cold email of about 150 words. It should:
+    1. Have a catchy, professional subject line.
+    2. Address the contact person by name if provided, else use a polite greeting.
+    3. State clearly which role the candidate is interested in.
+    4. Highlight 1-2 key accomplishments/skills that directly match what the company might need.
+    5. Conclude with a clear call-to-action (e.g. asking for a brief 10-minute call).
+    Keep it concise and punchy. Do not include placeholders like [Insert Name] or [Date] in the output.
+    """)
+    
+    models = [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "openrouter/free"]
+    last_error = None
+    
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.7,
+                max_retries=1
+            )
+            chain = prompt | llm | StrOutputParser()
+            result = await chain.ainvoke({
+                "company_name": request.company_name,
+                "role": request.role,
+                "contact_person": request.contact_person or "Hiring Manager",
+                "key_strengths": request.key_strengths or "software engineering",
+                "resume_text": request.resume_text or ""
+            })
+            return {"cold_email": result}
+        except Exception as e:
+            last_error = e
+            continue
+            
+    return {"cold_email": f"Subject: Passionate Software Engineer - {request.role} role at {request.company_name}\n\nDear {request.contact_person or 'Hiring Team'},\n\nI hope this email finds you well.\n\nI have been following {request.company_name} and am extremely impressed by your work. I am reaching out to express my interest in the {request.role} role. With my background in technology and building scalable projects, I am confident I can add value to your team.\n\nWould you be open to a quick 10-minute call next week to discuss how my skills align with your goals?\n\nBest regards,\n[Your Name]"}
+
+@router.post("/generate-linkedin-summary")
+async def generate_linkedin_summary(request: LinkedInSummaryRequest):
+    prompt = ChatPromptTemplate.from_template("""
+    You are an expert personal branding consultant. Generate three compelling, optimized LinkedIn "About" summaries (Creative, Professional, and Story-based/Action-oriented) for a candidate based on their experience.
+    
+    Candidate Experience/Resume:
+    {resume_text}
+    
+    Tone context: {tone}
+    
+    For each style (Creative, Professional, Story-based), write a paragraph (approx. 100-150 words) that captures key achievements, tech stack, and professional drive. Do not use generic placeholders.
+    Return them as a single text block clearly separated by headers (e.g. "Option 1: Professional", "Option 2: Creative", "Option 3: Story-based").
+    """)
+    
+    models = [settings.OPENROUTER_MODEL, "google/gemma-4-31b-it:free", "openrouter/free"]
+    last_error = None
+    
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.7,
+                max_retries=1
+            )
+            chain = prompt | llm | StrOutputParser()
+            result = await chain.ainvoke({
+                "resume_text": request.resume_text,
+                "tone": request.tone or "Professional"
+            })
+            return {"linkedin_summary": result}
+        except Exception as e:
+            last_error = e
+            continue
+            
+    return {"linkedin_summary": "Option 1: Professional\nI am a driven software developer specializing in building modern web applications. With expertise in React, Node.js, and Java Spring Boot, I solve complex problems and deliver high-quality, maintainable code.\n\nOption 2: Creative\nI write clean code that brings ideas to life. From designing interactive UI components to optimizing database architectures, I bridge the gap between design and functionality.\n\nOption 3: Story-based\nMy journey in software engineering started with a passion for automation. Over the past few years, I have built multiple full-stack applications and collaborated with diverse teams to launch products that users love."}

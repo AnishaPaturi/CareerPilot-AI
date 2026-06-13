@@ -1,15 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Search, CheckCircle, Video, Map as MapIcon, BookOpen, MapPin, ExternalLink, Loader2, Building2 } from 'lucide-react';
-import { drivesAPI, applicationsAPI, atsAPI, jobsAPI, studentsAPI, mockInterviewAPI } from '../services/api';
+import { 
+  LayoutDashboard, FileText, PanelLeftClose, PanelLeftOpen, Briefcase, Search, 
+  CheckCircle, Video, Map as MapIcon, BookOpen, MapPin, ExternalLink, Loader2, 
+  Building2, Compass, Trello, Send, Sparkles, X, AlertCircle 
+} from 'lucide-react';
+import { drivesAPI, applicationsAPI, atsAPI, jobsAPI, studentsAPI, mockInterviewAPI, careerRoadmapAPI } from '../services/api';
 import AIInterviewSimulator from '../components/AIInterviewSimulator';
 import DSAPlanner from '../components/DSAPlanner';
 import StudyMaterials from '../components/StudyMaterials';
 import NotesView from '../pages/Notes';
 import CSNotes from '../components/CSNotes';
 import RecruiterDashboard from '../components/RecruiterDashboard';
+import CareerRoadmap from '../components/CareerRoadmap';
+import JobTracker from '../components/JobTracker';
+import OutreachToolkit from '../components/OutreachToolkit';
 import { useNotifications } from '../hooks/useNotifications';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Dashboard() {
   const { user, role, logout } = useAuth();
@@ -28,6 +36,9 @@ export default function Dashboard() {
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
     { id: 'find-jobs', label: 'Find Jobs', icon: <Search size={18} /> },
     { id: 'applications', label: 'My Applications', icon: <CheckCircle size={18} /> },
+    { id: 'tracker', label: 'Job Tracker', icon: <Trello size={18} /> },
+    { id: 'roadmap', label: 'Career Roadmap', icon: <Compass size={18} /> },
+    { id: 'outreach', label: 'Outreach Toolkit', icon: <Send size={18} /> },
     { id: 'upload',   label: 'Upload Resume', icon: <FileText size={18} /> },
     { id: 'interview', label: 'AI Interview', icon: <Video size={18} /> },
     { id: 'dsa',      label: 'DSA Planner', icon: <MapIcon size={18} /> },
@@ -55,6 +66,17 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  
+  // Onboarding states
+  const [hasCheckedHistory, setHasCheckedHistory] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(1);
+  const [onboardingRole, setOnboardingRole] = useState('Software Engineer');
+  const [onboardingCompany, setOnboardingCompany] = useState('MAANG');
+  const [onboardingFile, setOnboardingFile] = useState(null);
+  const [onboardingAnalyzing, setOnboardingAnalyzing] = useState(false);
+  const [onboardingAnalysis, setOnboardingAnalysis] = useState(null);
+  const [onboardingGeneratingRoadmap, setOnboardingGeneratingRoadmap] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const fileInputRef = useRef(null);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
@@ -91,14 +113,28 @@ export default function Dashboard() {
     if (active === 'find-jobs' || active === 'dashboard') {
       drivesAPI.getAll().then(setDrives).catch(console.error);
     }
-    if (role === 'STUDENT' && (active === 'applications' || active === 'dashboard')) {
+    if (role === 'STUDENT' && (active === 'applications' || active === 'dashboard' || active === 'tracker')) {
       if (user?.id) {
         applicationsAPI.getByStudent(user.id).then(setApplications).catch(console.error);
-        studentsAPI.getResumeHistory(user.id).then(setResumeHistory).catch(console.error);
+        studentsAPI.getResumeHistory(user.id)
+          .then(res => {
+            setResumeHistory(res || []);
+            setHasCheckedHistory(true);
+          })
+          .catch(err => {
+            console.error("Failed to load resume history:", err);
+            setHasCheckedHistory(true);
+          });
         mockInterviewAPI.getByStudent(user.id).then(setMockInterviews).catch(console.error);
       }
     }
   }, [active, role, user?.id]);
+
+  useEffect(() => {
+    if (role === 'STUDENT' && hasCheckedHistory && resumeHistory.length === 0 && localStorage.getItem(`onboarding_completed_${user?.id}`) !== 'true') {
+      setShowOnboarding(true);
+    }
+  }, [hasCheckedHistory, resumeHistory, role, user?.id]);
 
   // Live jobs — fire independently on tab switch and filter change
   useEffect(() => {
@@ -706,6 +742,18 @@ export default function Dashboard() {
             <DSAPlanner />
           )}
 
+          {active === 'roadmap' && role === 'STUDENT' && (
+            <CareerRoadmap />
+          )}
+
+          {active === 'tracker' && role === 'STUDENT' && (
+            <JobTracker />
+          )}
+
+          {active === 'outreach' && role === 'STUDENT' && (
+            <OutreachToolkit />
+          )}
+
           {active === 'knowledge' && role === 'STUDENT' && (
             <StudyMaterials />
           )}
@@ -719,6 +767,269 @@ export default function Dashboard() {
           )}
         </main>
       </div>
+
+      {/* Onboarding Flow Overlay Modal */}
+      <AnimatePresence>
+        {showOnboarding && (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-slate-900 border border-purple-500/20 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden text-white"
+            >
+              {/* Header */}
+              <div className="bg-slate-950 px-6 py-4 border-b border-white/10 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="text-purple-400 animate-pulse" size={18} />
+                  <h3 className="text-white font-black text-sm uppercase tracking-wider text-xs">Profile Setup Guide</h3>
+                </div>
+                <div className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-black">
+                  Step {onboardingStep} of 3
+                </div>
+              </div>
+
+              {/* Step 1: Target Role */}
+              {onboardingStep === 1 && (
+                <div className="p-6 space-y-6">
+                  <div className="space-y-1">
+                    <h4 className="text-lg font-black text-white">Let's Tailor Your AI Career Space</h4>
+                    <p className="text-xs text-slate-400">Choose your target career role and tier so we can analyze gaps and customize roadmaps.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1.5">Target Job Title</label>
+                      <input 
+                        type="text" 
+                        value={onboardingRole}
+                        onChange={e => setOnboardingRole(e.target.value)}
+                        placeholder="e.g. Frontend Developer, Software Engineer, Data Analyst"
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-purple-500/50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1.5">Target Company Tier</label>
+                      <select 
+                        value={onboardingCompany}
+                        onChange={e => setOnboardingCompany(e.target.value)}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-purple-500/50 cursor-pointer"
+                      >
+                        <option value="MAANG">MAANG / Big Tech (High Algorithms & Systems)</option>
+                        <option value="Product Startup">Product Startups (Agile Web/Mobile, High Autonomy)</option>
+                        <option value="Service Enterprise">Service Enterprise (Enterprise architecture, SQL, Java)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 flex justify-end">
+                    <button
+                      onClick={() => setOnboardingStep(2)}
+                      className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-md"
+                    >
+                      Continue
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Upload Resume */}
+              {onboardingStep === 2 && (
+                <div className="p-6 space-y-6">
+                  <div className="space-y-1">
+                    <h4 className="text-lg font-black text-white">Upload Your Current Resume</h4>
+                    <p className="text-xs text-slate-400">Upload your PDF or Word resume so our ATS simulator can parse it for insights.</p>
+                  </div>
+
+                  <div 
+                    onClick={() => {
+                      const fileInput = document.createElement('input');
+                      fileInput.type = 'file';
+                      fileInput.accept = '.pdf,.doc,.docx';
+                      fileInput.onchange = (e) => {
+                        const file = e.target.files[0];
+                        if (file) setOnboardingFile(file);
+                      };
+                      fileInput.click();
+                    }}
+                    className="border-2 border-dashed border-white/10 hover:border-purple-500/30 rounded-2xl p-8 text-center cursor-pointer transition-all bg-slate-950/40 hover:bg-slate-950/60"
+                  >
+                    <FileText size={32} className="text-slate-500 mx-auto mb-2" />
+                    {onboardingFile ? (
+                      <div className="space-y-1">
+                        <p className="text-xs text-white font-bold">{onboardingFile.name}</p>
+                        <p className="text-[10px] text-slate-500">{(onboardingFile.size / 1024).toFixed(1)} KB</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <p className="text-xs text-slate-300 font-medium">Click to select PDF or Doc resume</p>
+                        <p className="text-[10px] text-slate-500">Supports PDF, DOC, DOCX up to 5MB</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-4 flex justify-between">
+                    <button
+                      onClick={() => setOnboardingStep(1)}
+                      className="px-4 py-2 border border-white/10 rounded-xl text-slate-400 hover:text-white text-xs font-bold transition-all"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!onboardingFile) {
+                          alert("Please upload a resume file first.");
+                          return;
+                        }
+                        setOnboardingAnalyzing(true);
+                        try {
+                          const data = await atsAPI.analyze(onboardingFile);
+                          if (data && data.error) throw new Error(data.error);
+                          setOnboardingAnalysis(data);
+                          setOnboardingStep(3);
+                        } catch (err) {
+                          alert("Failed to analyze: " + err.message);
+                        } finally {
+                          setOnboardingAnalyzing(false);
+                        }
+                      }}
+                      disabled={onboardingAnalyzing || !onboardingFile}
+                      className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-md disabled:opacity-50"
+                    >
+                      {onboardingAnalyzing ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          Parsing ATS Metrics...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={14} />
+                          Analyze & Parse Resume
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: First Insight & Complete */}
+              {onboardingStep === 3 && onboardingAnalysis && (
+                <div className="p-6 space-y-6">
+                  <div className="space-y-1">
+                    <h4 className="text-lg font-black text-white">Your Career Readiness Summary</h4>
+                    <p className="text-xs text-slate-400">Our ATS analyzer completed your initial evaluation. Let's look at the results.</p>
+                  </div>
+
+                  {/* Insight Stats */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-slate-950 p-3.5 rounded-xl border border-white/5 text-center">
+                      <div className="text-[20px] font-black text-purple-400">
+                        {onboardingAnalysis.ats_score !== undefined ? onboardingAnalysis.ats_score : onboardingAnalysis.score || 70}%
+                      </div>
+                      <div className="text-[9px] text-slate-500 uppercase tracking-wider font-bold mt-1">ATS Score</div>
+                    </div>
+
+                    <div className="bg-slate-950 p-3.5 rounded-xl border border-white/5 text-center col-span-2">
+                      <div className="text-white text-xs font-bold truncate">
+                        {Object.keys(onboardingAnalysis.skills_match || {}).slice(0, 3).join(', ') || 'Not Detected'}
+                      </div>
+                      <div className="text-[9px] text-slate-500 uppercase tracking-wider font-bold mt-2">Parsed Top Skills</div>
+                    </div>
+                  </div>
+
+                  {onboardingAnalysis.missing_skills && onboardingAnalysis.missing_skills.length > 0 && (
+                    <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3 text-xs">
+                      <span className="text-red-400 font-bold">Identified Skill Gaps: </span>
+                      <span className="text-slate-300">
+                        {onboardingAnalysis.missing_skills.slice(0, 4).join(', ')}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="bg-slate-950 p-3 rounded-xl border border-white/5 text-[11px] leading-relaxed text-slate-400 max-h-[100px] overflow-y-auto font-sans">
+                    <span className="text-white font-bold block mb-1">Resume Summary Idea:</span>
+                    {onboardingAnalysis.summary || "Your resume has been successfully parsed. We have mapped out your skills and experience."}
+                  </div>
+
+                  <div className="pt-4 flex justify-between">
+                    <button
+                      onClick={() => setOnboardingStep(2)}
+                      className="px-4 py-2 border border-white/10 rounded-xl text-slate-400 hover:text-white text-xs font-bold transition-all"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setOnboardingGeneratingRoadmap(true);
+                        try {
+                          // 1. Save Resume Version
+                          const parsedSkills = Object.keys(onboardingAnalysis.skills_match || {});
+                          const payload = {
+                            studentId: user.id,
+                            label: "Main Resume",
+                            templateId: "default",
+                            resumeData: JSON.stringify({
+                              name: user.name,
+                              email: user.email,
+                              summary: onboardingAnalysis.summary || "Parsed summary details",
+                              skills: parsedSkills.join(', '),
+                              experience: "Imported from parsed resume",
+                              projects: "Imported from parsed resume",
+                              education: "Imported from parsed resume",
+                              certifications: "None"
+                            }),
+                            pdfUrl: ""
+                          };
+                          await resumeVersionAPI.save(payload);
+
+                          // 2. Generate Roadmap
+                          const roadmapData = await careerRoadmapAPI.generateRoadmap(
+                            onboardingRole, 
+                            parsedSkills.length > 0 ? parsedSkills : ["HTML", "CSS", "JavaScript"], 
+                            onboardingCompany
+                          );
+                          localStorage.setItem(`career_roadmap_${user.id}`, JSON.stringify(roadmapData));
+
+                          // 3. Mark Onboarding completed
+                          localStorage.setItem(`onboarding_completed_${user.id}`, 'true');
+                          
+                          // 4. Refresh page context
+                          const history = await studentsAPI.getResumeHistory(user.id);
+                          setResumeHistory(history || []);
+                          
+                          alert("Onboarding successfully completed! Career space initialized.");
+                          setShowOnboarding(false);
+                        } catch (err) {
+                          alert("Failed to complete onboarding: " + err.message);
+                        } finally {
+                          setOnboardingGeneratingRoadmap(false);
+                        }
+                      }}
+                      disabled={onboardingGeneratingRoadmap}
+                      className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-md disabled:opacity-50"
+                    >
+                      {onboardingGeneratingRoadmap ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          Building Career Space...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={14} />
+                          Launch Career Space
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
