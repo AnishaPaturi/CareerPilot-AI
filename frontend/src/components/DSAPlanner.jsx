@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { dsaPlannerAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import CodeSketchVisualizer from './CodeSketchVisualizer';
 
 const COMMON_LEETCODE_MAP = {
   "two sum": { id: 1, difficulty: "Easy" },
@@ -98,6 +99,7 @@ const getLeetCodeUrl = (problemStr) => {
 
 export default function DSAPlanner() {
   const { user } = useAuth();
+  const [activeSubTab, setActiveSubTab] = useState('visualizer');
   const [currentLevel, setCurrentLevel] = useState('Beginner');
   const [targetCompany, setTargetCompany] = useState('MAANG');
   const [timeAvailable, setTimeAvailable] = useState(2);
@@ -194,98 +196,129 @@ export default function DSAPlanner() {
   };
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-white max-w-5xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6 text-blue-400">Agentic DSA Planner</h2>
+    <div className="max-w-6xl mx-auto text-white space-y-6">
+      {/* Sub-tab navigation */}
+      <div className="flex bg-slate-900/40 p-1.5 rounded-2xl border border-slate-800/80 max-w-md mx-auto backdrop-blur-md">
+        <button
+          onClick={() => setActiveSubTab('visualizer')}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all ${
+            activeSubTab === 'visualizer'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          CodeSketch Visualizer
+        </button>
+        <button
+          onClick={() => setActiveSubTab('roadmap')}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all ${
+            activeSubTab === 'roadmap'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          AI Study Roadmap
+        </button>
+      </div>
 
-      {!roadmap ? (
-        <form onSubmit={generateRoadmap} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">Current Level</label>
-              <select value={currentLevel} onChange={e => setCurrentLevel(e.target.value)} className="w-full bg-slate-800 p-3 rounded-lg">
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">Target Company / Tier</label>
-              <input type="text" value={targetCompany} onChange={e => setTargetCompany(e.target.value)} className="w-full bg-slate-800 p-3 rounded-lg" required />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">Hours per Day</label>
-              <input type="number" min="1" max="16" value={timeAvailable} onChange={e => setTimeAvailable(e.target.value)} className="w-full bg-slate-800 p-3 rounded-lg" required />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-400 mb-1">Duration (Days)</label>
-              <input type="number" min="7" max="90" value={days} onChange={e => setDays(e.target.value)} className="w-full bg-slate-800 p-3 rounded-lg" required />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm text-slate-400 mb-1">Weak Areas (comma separated)</label>
-            <input type="text" value={weakAreas} onChange={e => setWeakAreas(e.target.value)} className="w-full bg-slate-800 p-3 rounded-lg" required />
-          </div>
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-bold">
-            {loading ? 'Analyzing your profile & generating roadmap...' : 'Generate AI Roadmap'}
-          </button>
-        </form>
+      {activeSubTab === 'visualizer' ? (
+        <CodeSketchVisualizer />
       ) : (
-        <div className="space-y-8">
-          <div className="flex justify-between items-center border-b border-white/10 pb-4">
-            <div>
-              <h3 className="text-2xl font-bold text-blue-300">{roadmap.title}</h3>
-              <p className="text-slate-400 mt-1">{roadmap.duration_days} Days to Mastery</p>
-            </div>
-            <button onClick={() => setRoadmap(null)} className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-medium">
-              Start Over
-            </button>
-          </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-white max-w-5xl mx-auto">
+          <h2 className="text-2xl font-bold mb-6 text-blue-400">Agentic DSA Planner</h2>
 
-          <div className="grid gap-6">
-            {roadmap.daily_goals?.map((goal, idx) => (
-              <div key={idx} className="bg-slate-800/50 border border-slate-700 p-6 rounded-xl flex flex-col md:flex-row gap-6">
-                <div className="min-w-[120px] text-center bg-slate-900 rounded-lg p-4 flex flex-col justify-center">
-                  <span className="text-sm text-slate-400 uppercase tracking-wider font-bold">Day {goal.day}</span>
-                  <span className="text-xl font-bold text-blue-400 mt-1">
-                    {goal.estimated_time >= 10 ? `${Math.round((goal.estimated_time / 60) * 10) / 10}h` : `${goal.estimated_time}h`}
-                  </span>
+          {!roadmap ? (
+            <form onSubmit={generateRoadmap} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Current Level</label>
+                  <select value={currentLevel} onChange={e => setCurrentLevel(e.target.value)} className="w-full bg-slate-800 p-3 rounded-lg">
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-lg font-bold text-slate-200 mb-3">{goal.topic}</h4>
-                  <ul className="space-y-2">
-                    {goal.problems?.map((prob, i) => {
-                      const formattedProb = formatProblemString(prob);
-                      const url = getLeetCodeUrl(formattedProb);
-                      return (
-                        <li key={i} className="flex items-center gap-3 bg-white/[0.01] p-2 rounded-lg hover:bg-white/[0.03] transition-all border border-white/5">
-                          <input
-                            type="checkbox"
-                            checked={completedProblems.includes(formattedProb)}
-                            onChange={() => toggleProblemCompletion(prob)}
-                            className="accent-blue-500 rounded cursor-pointer w-4 h-4 shrink-0"
-                          />
-                          {url ? (
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`hover:text-blue-300 hover:underline transition-all text-sm font-medium ${completedProblems.includes(formattedProb) ? 'line-through text-slate-500' : 'text-blue-400'}`}
-                            >
-                              {formattedProb}
-                            </a>
-                          ) : (
-                            <span className={`text-sm ${completedProblems.includes(formattedProb) ? 'line-through text-slate-500' : 'text-slate-300'}`}>{formattedProb}</span>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Target Company / Tier</label>
+                  <input type="text" value={targetCompany} onChange={e => setTargetCompany(e.target.value)} className="w-full bg-slate-800 p-3 rounded-lg" required />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Hours per Day</label>
+                  <input type="number" min="1" max="16" value={timeAvailable} onChange={e => setTimeAvailable(e.target.value)} className="w-full bg-slate-800 p-3 rounded-lg" required />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Duration (Days)</label>
+                  <input type="number" min="7" max="90" value={days} onChange={e => setDays(e.target.value)} className="w-full bg-slate-800 p-3 rounded-lg" required />
                 </div>
               </div>
-            ))}
-          </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Weak Areas (comma separated)</label>
+                <input type="text" value={weakAreas} onChange={e => setWeakAreas(e.target.value)} className="w-full bg-slate-800 p-3 rounded-lg" required />
+              </div>
+              <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-bold">
+                {loading ? 'Analyzing your profile & generating roadmap...' : 'Generate AI Roadmap'}
+              </button>
+            </form>
+          ) : (
+            <div className="space-y-8">
+              <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                <div>
+                  <h3 className="text-2xl font-bold text-blue-300">{roadmap.title}</h3>
+                  <p className="text-slate-400 mt-1">{roadmap.duration_days} Days to Mastery</p>
+                </div>
+                <button onClick={() => setRoadmap(null)} className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-medium">
+                  Start Over
+                </button>
+              </div>
+
+              <div className="grid gap-6">
+                {roadmap.daily_goals?.map((goal, idx) => (
+                  <div key={idx} className="bg-slate-800/50 border border-slate-700 p-6 rounded-xl flex flex-col md:flex-row gap-6">
+                    <div className="min-w-[120px] text-center bg-slate-900 rounded-lg p-4 flex flex-col justify-center">
+                      <span className="text-sm text-slate-400 uppercase tracking-wider font-bold">Day {goal.day}</span>
+                      <span className="text-xl font-bold text-blue-400 mt-1">
+                        {goal.estimated_time >= 10 ? `${Math.round((goal.estimated_time / 60) * 10) / 10}h` : `${goal.estimated_time}h`}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-bold text-slate-200 mb-3">{goal.topic}</h4>
+                      <ul className="space-y-2">
+                        {goal.problems?.map((prob, i) => {
+                          const formattedProb = formatProblemString(prob);
+                          const url = getLeetCodeUrl(formattedProb);
+                          return (
+                            <li key={i} className="flex items-center gap-3 bg-white/[0.01] p-2 rounded-lg hover:bg-white/[0.03] transition-all border border-white/5">
+                              <input
+                                type="checkbox"
+                                checked={completedProblems.includes(formattedProb)}
+                                onChange={() => toggleProblemCompletion(prob)}
+                                className="accent-blue-500 rounded cursor-pointer w-4 h-4 shrink-0"
+                              />
+                              {url ? (
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`hover:text-blue-300 hover:underline transition-all text-sm font-medium ${completedProblems.includes(formattedProb) ? 'line-through text-slate-500' : 'text-blue-400'}`}
+                                >
+                                  {formattedProb}
+                                </a>
+                              ) : (
+                                <span className={`text-sm ${completedProblems.includes(formattedProb) ? 'line-through text-slate-500' : 'text-slate-300'}`}>{formattedProb}</span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
+

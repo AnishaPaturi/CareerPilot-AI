@@ -384,3 +384,6 @@ fixtures/
 # ── Lighthouse / CI reports ─────────────────────────────────
 .lighthouseci/
 .husky/
+
+# Local settings and keys
+backend/settings.json
