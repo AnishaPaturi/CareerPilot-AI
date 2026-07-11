@@ -335,3 +335,73 @@ async def generate_career_roadmap(request: CareerRoadmapRequest):
         learning_resources=resources,
         weekly_goals=weekly_goals
     )
+
+# --- CodeSketch Trace Models & Endpoint ---
+
+class CodeSketchStep(BaseModel):
+    lineIndex: int = Field(description="0-based line index in the code lines array representing the line currently executing")
+    explanation: str = Field(description="Short sentence explaining what is happening in this execution step")
+    variables: dict = Field(description="Dictionary of variable names and their values at this step (e.g. {'low': 0, 'high': 4, 'mid': 2})")
+
+class CodeSketchTrace(BaseModel):
+    problem_title: str
+    code_lines: List[str] = Field(description="Array of strings representing individual lines of the solved code (e.g. JavaScript, Python)")
+    steps: List[CodeSketchStep] = Field(description="List of step-by-step trace elements of code execution")
+    time_complexity: str = Field(description="Time complexity e.g., O(N log N)")
+    space_complexity: str = Field(description="Space complexity e.g., O(N)")
+
+class TraceRequest(BaseModel):
+    problem_desc: str
+    language: str = "javascript"
+    custom_input: Optional[str] = None
+
+@router.post("/generate-trace", response_model=CodeSketchTrace)
+async def generate_code_sketch_trace(request: TraceRequest):
+    parser = JsonOutputParser(pydantic_object=CodeSketchTrace)
+    
+    prompt = ChatPromptTemplate.from_template("""
+    You are an expert DSA Tutor. The user wants to trace the step-by-step code execution for the following LeetCode problem:
+    - Problem Name / Description: {problem_desc}
+    - Programming Language: {language}
+    - Test Input values: {custom_input}
+    
+    Instructions:
+    1. Write a clean, standard solution in {language} for the problem.
+    2. Split the solution code into an array of lines (strings).
+    3. Generate a sequence of trace steps of executing this code line-by-line with the test input {custom_input}.
+    4. Each step must reference the 0-based index of the line in the code array that is executing, provide a clear explanation, and capture the current values of all variables.
+    5. Include the time and space complexity.
+    
+    {format_instructions}
+    """)
+    
+    models = []
+    for m in [settings.OPENROUTER_MODEL, "google/gemma-2-9b-it:free", "qwen/qwen3-coder:free", "meta-llama/llama-3.2-3b-instruct:free", "openrouter/free"]:
+        if m and m not in models:
+            models.append(m)
+            
+    last_error = None
+    for model in models:
+        try:
+            llm = ChatOpenAI(
+                api_key=os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=model,
+                temperature=0.2,
+                max_retries=1
+            )
+            chain = prompt | llm | parser
+            result = chain.invoke({
+                "problem_desc": request.problem_desc,
+                "language": request.language,
+                "custom_input": request.custom_input or "",
+                "format_instructions": parser.get_format_instructions()
+            })
+            return CodeSketchTrace(**result)
+        except Exception as e:
+            last_error = e
+            import sys
+            print(f"Failed to generate trace using model {model}: {e}", file=sys.stderr)
+            continue
+            
+    raise HTTPException(status_code=500, detail=f"Failed to generate trace. Last error: {str(last_error)}")

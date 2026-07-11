@@ -287,6 +287,15 @@ export const dsaPlannerAPI = {
     const res = await fetch(url, { method: "POST" });
     if (!res.ok) throw new Error('Failed to recommend problems');
     return res.json();
+  },
+  generateTrace: async (problemDesc, language, customInput) => {
+    const res = await fetch(`${BASE_URL}/api/ai/dsa/generate-trace`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ problem_desc: problemDesc, language, custom_input: customInput })
+    });
+    if (!res.ok) throw new Error('Failed to generate AI code trace');
+    return res.json();
   }
 };
 

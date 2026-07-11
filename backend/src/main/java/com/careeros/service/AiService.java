@@ -116,6 +116,12 @@ public class AiService {
         return restTemplate.postForObject(url, request, Object.class);
     }
 
+    @Cacheable(value = "dsaTraces", key = "#request.toString()", unless = "#result == null")
+    public Object generateDsaTrace(Map<String, Object> request) {
+        String url = FASTAPI_BASE_URL + "/dsa/generate-trace";
+        return restTemplate.postForObject(url, request, Object.class);
+    }
+
     @Cacheable(value = "careerRoadmaps", key = "#request.toString()", unless = "#result == null")
     public Object generateCareerRoadmap(Map<String, Object> request) {
         String url = FASTAPI_BASE_URL + "/dsa/generate-career-roadmap";

@@ -112,6 +112,15 @@ public class AiController {
         }
     }
 
+    @PostMapping("/dsa/generate-trace")
+    public ResponseEntity<Object> generateDsaTrace(@RequestBody Map<String, Object> request) {
+        try {
+            return ResponseEntity.ok(aiService.generateDsaTrace(request));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/career/generate-roadmap")
     public ResponseEntity<Object> generateCareerRoadmap(@RequestBody Map<String, Object> request) {
         try {
